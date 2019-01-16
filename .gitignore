@@ -1,0 +1,7 @@
+projects/output/
+*.bak
+*.uvgui.*
+*.uvopt
+*.dep
+*~
+
