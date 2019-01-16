@@ -4,6 +4,8 @@
 #include <hsf.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
 
 #include "config.h"
 #include "gpio.h"
