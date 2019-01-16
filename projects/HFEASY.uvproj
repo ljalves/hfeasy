@@ -377,7 +377,7 @@
               <MiscControls>--diag_suppress=494  --c99</MiscControls>
               <Define>__KEIL_MDK__ __LPT100F__</Define>
               <Undefine></Undefine>
-              <IncludePath>..\sdk\1.52\include;..\src\lib\mqtt\include</IncludePath>
+              <IncludePath>..\sdk\1.52\include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -422,6 +422,11 @@
           <GroupName>src</GroupName>
           <Files>
             <File>
+              <FileName>mqttlib.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\mqttlib.c</FilePath>
+            </File>
+            <File>
               <FileName>startup.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\startup.c</FilePath>
@@ -460,21 +465,6 @@
               <FileName>LPB100Kernel.lib</FileName>
               <FileType>4</FileType>
               <FilePath>..\sdk\1.52\libs\LPB100Kernel.lib</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>inc</GroupName>
-          <Files>
-            <File>
-              <FileName>mqtt_pal.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\src\lib\mqtt\src\mqtt_pal.c</FilePath>
-            </File>
-            <File>
-              <FileName>mqtt.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\src\lib\mqtt\src\mqtt.c</FilePath>
             </File>
           </Files>
         </Group>
