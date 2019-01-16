@@ -446,6 +446,11 @@
               <FileType>1</FileType>
               <FilePath>..\src\mqttcli.c</FilePath>
             </File>
+            <File>
+              <FileName>gpio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\gpio.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
