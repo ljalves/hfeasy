@@ -7,11 +7,10 @@
 #define MQTT_RX_BUF_SIZE	1024
 
 
-static struct mqtt_client client;
+static struct mqtt_client mqttcli;
 
 static uint8_t *txbuf; /* should be large enough to hold multiple whole mqtt messages */
 static uint8_t *rxbuf; /* should be large enough any whole mqtt message expected to be received */
-
 
 
 void publish_callback(void** unused, struct mqtt_response_publish *published) 
@@ -24,16 +23,14 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 	memcpy(msg, published->application_message, published->application_message_size);
 	msg[published->application_message_size] = '\0';
 	u_printf("Received publish('%s'): %s\n", topic_name, msg);
+	
+	/* TODO: change gpio state */
+	
 	hfmem_free(topic_name);
+	hfmem_free(msg);
 }
 
-static void* USER_FUNC mqttcli_thread(void* client)
-{
-	while(1) {
-		mqtt_sync((struct mqtt_client*) client);
-		msleep(100);
-	}
-}
+
 
 int USER_FUNC mqttcli_connect(void)
 {
@@ -79,72 +76,119 @@ int USER_FUNC mqttcli_connect(void)
 	return fd;
 }
 
-void USER_FUNC test_mqtt(void)
+
+static void* USER_FUNC mqttcli_thread(void* client)
 {
-	int fd;
-
-	msleep(5000);
-
-	fd = mqttcli_connect();
-	if (fd < 0)
-		return;
-	u_printf("mqtt client connected\n");
+	struct mqtt_client *c = client;
+	static uint8_t STATE = 0;
+	struct hfeasy_runtime_config *rtcfg = config_get_rtcfg();
 	
-	/* alloc buf mem */
-	txbuf = hfmem_malloc(MQTT_TX_BUF_SIZE);
-	if (txbuf == NULL) {
-		u_printf("failed to alloc tx buf mem\r\n");
-		goto err3;
+	while(1) {
+		//u_printf("mqttcli_thread STATE=%d\r\n", STATE);
+		switch(STATE) {
+			case 0:
+			default:
+				/* disconnected */
+				if (rtcfg->has_ip)
+					STATE = 1;
+				msleep(1000);
+				break;
+				
+			case 1:
+				STATE = 2;
+				/* alloc rx/tx buffers */
+				txbuf = hfmem_malloc(MQTT_TX_BUF_SIZE);
+				if (txbuf == NULL) {
+					u_printf("failed to alloc tx buf mem\r\n");
+					STATE = 52;
+				}
+				rxbuf = hfmem_malloc(MQTT_RX_BUF_SIZE);
+				if (rxbuf == NULL) {
+					u_printf("failed to alloc rx buf mem\r\n");
+					STATE = 51;
+				}
+				break;
+				
+			case 2:
+				/* connect to server */
+				{
+					int fd = mqttcli_connect();
+					if (fd >= 0) {
+						/* connected, init mqtt */
+						mqtt_init(client, fd, txbuf, MQTT_TX_BUF_SIZE, rxbuf, MQTT_RX_BUF_SIZE, publish_callback);
+						mqtt_connect(client, "subscribing_client", NULL, NULL, 0, NULL, NULL, 0, 400);
+						if (c->error != MQTT_OK) {
+							u_printf("error: %s\n", mqtt_error_str(c->error));
+							STATE = 49;
+						} else {
+							STATE = 3;
+							rtcfg->mqtt_ready = 1;
+						}
+					} else {
+						msleep(1000);
+					}
+				}
+				break;
+				
+			case 3:
+				/* running state */
+				mqtt_sync(c);
+				msleep(100);
+				break;
+			
+			case 49:
+				close(c->socketfd);
+			case 50:
+				hfmem_free(txbuf);
+			case 51:
+				hfmem_free(txbuf);
+			case 52:
+				rtcfg->mqtt_ready = 0;
+				STATE = 0;
+				msleep(1000);
+				break;
+		}
 	}
-	rxbuf = hfmem_malloc(MQTT_RX_BUF_SIZE);
-	if (rxbuf == NULL) {
-		u_printf("failed to alloc rx buf mem\r\n");
-		goto err2;
-	}
-	
-	mqtt_init(&client, fd, txbuf, MQTT_TX_BUF_SIZE, rxbuf, MQTT_RX_BUF_SIZE, publish_callback);
-	mqtt_connect(&client, "subscribing_client", NULL, NULL, 0, NULL, NULL, 0, 400);
+}
 
-	if (client.error != MQTT_OK) {
-		u_printf("error: %s\n", mqtt_error_str(client.error));
-		goto err1;
-	}
+void USER_FUNC mqttcli_publish(char *value)
+{
+	struct hfeasy_config *cfg = config_get_cfg();
+	mqtt_publish(&mqttcli, cfg->mqtt_pub_topic, value, strlen(value) , MQTT_PUBLISH_QOS_0);
+}
 
-	/* start a thread to refresh the client (handle egress and ingree client traffic) */
-	if (hfthread_create((PHFTHREAD_START_ROUTINE) mqttcli_thread,
-					"mqttcli", 256, &client, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS) {
-		u_printf("mqtt sync thread create failed!\n");
-		goto err1;
-	}
-	
-	u_printf("mqtt subscribe\n");
-	mqtt_subscribe(&client, "light", 0);
 
-	int st = 0;
-	while (1) {
-		char topic[] = "light";
-		char topic2[] = "luz";
-		char msg[10];
-		sprintf(msg, "%d", st);
-		mqtt_publish(&client, topic, msg, strlen(msg) , MQTT_PUBLISH_QOS_0);
-		msleep(1000);
-		st = st ^ 1;
-		sprintf(msg, "%s", st ? "ON" : "OFF");
-		mqtt_publish(&client, topic2, msg, strlen(msg) , MQTT_PUBLISH_QOS_0);
-		msleep(5000);
-	};
-	
-err1:
-	hfmem_free(rxbuf);
-err2:
-	hfmem_free(txbuf);
-err3:
-	return;
+void USER_FUNC mqttcli_initcfg(void)
+{
+	struct hfeasy_config *cfg = config_get_cfg();
+
+	sprintf(cfg->mqtt_pub_topic, "light");
+	sprintf(cfg->mqtt_sub_topic, "light");
+	sprintf(cfg->mqtt_on_value, "1");
+	sprintf(cfg->mqtt_off_value, "0");
 }
 
 
 void USER_FUNC mqttcli_init(void)
 {
-	test_mqtt();
+	struct hfeasy_runtime_config *rtcfg = config_get_rtcfg();
+	struct hfeasy_config *cfg = config_get_cfg();
+	
+	/* start mqtt thread */
+	if (hfthread_create((PHFTHREAD_START_ROUTINE) mqttcli_thread,
+					"mqttcli", 256, &mqttcli, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS) {
+		u_printf("mqtt sync thread create failed!\n");
+	}
+
+	u_printf("waiting for mqtt connection.");
+	while (rtcfg->mqtt_ready == 0) {
+		u_printf(".");
+		msleep(1000);
+	}
+	u_printf("\r\nready\r\n");
+	
+	u_printf("mqtt subscribe\n");
+	mqtt_subscribe(&mqttcli, cfg->mqtt_sub_topic, 0);
+
 	return;
 }
