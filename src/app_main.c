@@ -297,6 +297,7 @@ int USER_FUNC app_main(void)
 	httpd_init();
 	gpio_init();
 	config_init();
+	mqttcli_init();
 		
 	return 1;
 }
