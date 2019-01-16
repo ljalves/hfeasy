@@ -294,6 +294,8 @@ int USER_FUNC app_main(void)
 		HF_Debug(DEBUG_WARN,"start httpd fail\n");
 	}
 	
+	httpd_init();
+		
 	return 1;
 }
 
