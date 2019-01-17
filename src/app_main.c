@@ -235,7 +235,7 @@ static void show_reset_reason(void)
 	uint32_t reset_reason = hfsys_get_reset_reason();
 	
 #if 1
-	u_printf("reset_reasion:%08x\n", reset_reason);
+	u_printf("reset_reason: %08x\n", reset_reason);
 #else	
 	if(reset_reason&HFSYS_RESET_REASON_ERESET) // hardware restart
 		u_printf("ERESET\n");
@@ -258,12 +258,10 @@ static void show_reset_reason(void)
 	return;
 }
 
-
 void app_init(void)
 {
 	u_printf("app_init\r\n");
 }
-
 
 int USER_FUNC app_main(void)
 {
@@ -294,9 +292,9 @@ int USER_FUNC app_main(void)
 		HF_Debug(DEBUG_WARN,"start httpd fail\n");
 	}
 	
+	config_init();
 	httpd_init();
 	gpio_init();
-	config_init();
 	mqttcli_init();
 		
 	return 1;
