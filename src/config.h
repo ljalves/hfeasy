@@ -8,7 +8,6 @@ struct hfeasy_config {
 	uint8_t		ver;
 	
 	/* mqtt server */
-	uint8_t		mqtt_enabled;
 	uint32_t	mqtt_server_ip;
 	uint16_t	mqtt_server_port;
 	char			mqtt_pub_topic[20];
@@ -17,16 +16,22 @@ struct hfeasy_config {
 	char			mqtt_off_value[10];
 };
 
-struct hfeasy_runtime_config {
+struct hfeasy_state {
 	uint8_t has_ip;
 	uint8_t mqtt_ready;
+	
+	uint8_t	relay_state;
+	
+	char mac_addr[6];
+	char mac_addr_s[6*2+1];
+	
+	struct hfeasy_config cfg;
 };
 
 void USER_FUNC config_init(void);
 void USER_FUNC config_save(void);
 
-struct hfeasy_runtime_config* USER_FUNC config_get_rtcfg(void);
-struct hfeasy_config* USER_FUNC config_get_cfg(void);
+struct hfeasy_state* USER_FUNC config_get_state(void);
 
 
 #endif
