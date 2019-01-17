@@ -6,6 +6,9 @@
 #define MQTT_TX_BUF_SIZE	1024
 #define MQTT_RX_BUF_SIZE	1024
 
+#define MQTT_SYNC_DELAY		200 /* ms */
+#define MQTT_PING_PERIOD	30  /* sec */
+#define MQTT_PING_COUNT		(MQTT_PING_PERIOD * (1000 / MQTT_SYNC_DELAY))
 
 static struct mqtt_client mqttcli;
 
@@ -15,6 +18,9 @@ static uint8_t *rxbuf; /* should be large enough any whole mqtt message expected
 
 void publish_callback(void** unused, struct mqtt_response_publish *published) 
 {
+	struct hfeasy_state *state = config_get_state();
+	struct hfeasy_config *cfg = &state->cfg;
+
 	char* topic_name = (char*) hfmem_malloc(published->topic_name_size + 1);
 	char* msg = (char*) hfmem_malloc(published->application_message_size + 1);
 	
@@ -24,7 +30,16 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 	msg[published->application_message_size] = '\0';
 	u_printf("Received publish('%s'): %s\n", topic_name, msg);
 	
-	/* TODO: change gpio state */
+
+	if (strcmp(topic_name, cfg->mqtt_sub_topic) == 0) {
+		if (strcmp(cfg->mqtt_on_value, msg) == 0) {
+			if (state->relay_state != 1)
+				set_relay(1, 0);
+		} else if (strcmp(cfg->mqtt_off_value, msg) == 0) {
+			if (state->relay_state != 0)
+				set_relay(0, 0);
+		}
+	}
 	
 	hfmem_free(topic_name);
 	hfmem_free(msg);
@@ -34,6 +49,7 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 
 int USER_FUNC mqttcli_connect(void)
 {
+	struct hfeasy_state *state = config_get_state();
 	struct sockaddr_in addr;
 	int fd, tmp;
 	
@@ -41,14 +57,14 @@ int USER_FUNC mqttcli_connect(void)
 	
 	addr.sin_family = AF_INET;
 	/* TODO: change ip:port to user config */
-	addr.sin_port = htons(1883);
+	addr.sin_port = htons(state->cfg.mqtt_server_port);
 	addr.sin_addr.s_addr=inet_addr("192.168.222.226");
 
 	fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (fd < 0)
 		return fd;
 	
-	tmp=1;
+	tmp = 1;
 	if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &tmp, sizeof(tmp)) < 0)
 		u_printf("set SO_KEEPALIVE fail\n");
 
@@ -81,7 +97,7 @@ static void* USER_FUNC mqttcli_thread(void* client)
 {
 	struct mqtt_client *c = client;
 	static uint8_t STATE = 0;
-	struct hfeasy_runtime_config *rtcfg = config_get_rtcfg();
+	struct hfeasy_state *state = config_get_state();
 	
 	while(1) {
 		//u_printf("mqttcli_thread STATE=%d\r\n", STATE);
@@ -89,7 +105,7 @@ static void* USER_FUNC mqttcli_thread(void* client)
 			case 0:
 			default:
 				/* disconnected */
-				if (rtcfg->has_ip)
+				if (state->has_ip && (state->cfg.mqtt_server_port != 0))
 					STATE = 1;
 				msleep(1000);
 				break;
@@ -116,13 +132,13 @@ static void* USER_FUNC mqttcli_thread(void* client)
 					if (fd >= 0) {
 						/* connected, init mqtt */
 						mqtt_init(client, fd, txbuf, MQTT_TX_BUF_SIZE, rxbuf, MQTT_RX_BUF_SIZE, publish_callback);
-						mqtt_connect(client, "subscribing_client", NULL, NULL, 0, NULL, NULL, 0, 400);
+						mqtt_connect(client, state->mac_addr_s, NULL, NULL, 0, NULL, NULL, 0, 400);
 						if (c->error != MQTT_OK) {
 							u_printf("error: %s\n", mqtt_error_str(c->error));
 							STATE = 49;
 						} else {
 							STATE = 3;
-							rtcfg->mqtt_ready = 1;
+							state->mqtt_ready = 1;
 						}
 					} else {
 						msleep(1000);
@@ -132,8 +148,19 @@ static void* USER_FUNC mqttcli_thread(void* client)
 				
 			case 3:
 				/* running state */
-				mqtt_sync(c);
-				msleep(100);
+				{
+					if (++state->mqtt_ready == MQTT_PING_COUNT) {
+						state->mqtt_ready = 1;
+						mqtt_ping(&mqttcli);
+						u_printf("mqtt ping\r\n");
+					}
+					
+					if (mqtt_sync(c) != MQTT_OK) {
+						u_printf("mqtt thread sync error: %s\r\n", mqtt_error_str(c->error));
+						STATE = 49;
+					}
+					msleep(MQTT_SYNC_DELAY);
+				}
 				break;
 			
 			case 49:
@@ -141,9 +168,9 @@ static void* USER_FUNC mqttcli_thread(void* client)
 			case 50:
 				hfmem_free(txbuf);
 			case 51:
-				hfmem_free(txbuf);
+				hfmem_free(rxbuf);
 			case 52:
-				rtcfg->mqtt_ready = 0;
+				state->mqtt_ready = 0;
 				STATE = 0;
 				msleep(1000);
 				break;
@@ -153,26 +180,26 @@ static void* USER_FUNC mqttcli_thread(void* client)
 
 void USER_FUNC mqttcli_publish(char *value)
 {
-	struct hfeasy_config *cfg = config_get_cfg();
-	mqtt_publish(&mqttcli, cfg->mqtt_pub_topic, value, strlen(value) , MQTT_PUBLISH_QOS_0);
+	struct hfeasy_state *state = config_get_state();
+	mqtt_publish(&mqttcli, state->cfg.mqtt_pub_topic, value, strlen(value) , MQTT_PUBLISH_QOS_0);
 }
 
 
 void USER_FUNC mqttcli_initcfg(void)
 {
-	struct hfeasy_config *cfg = config_get_cfg();
+	struct hfeasy_state *state = config_get_state();
 
-	sprintf(cfg->mqtt_pub_topic, "light");
-	sprintf(cfg->mqtt_sub_topic, "light");
-	sprintf(cfg->mqtt_on_value, "1");
-	sprintf(cfg->mqtt_off_value, "0");
+	sprintf(state->cfg.mqtt_pub_topic, "hf%s", state->mac_addr_s);
+	sprintf(state->cfg.mqtt_sub_topic, "hf%s", state->mac_addr_s);
+	sprintf(state->cfg.mqtt_on_value, "1");
+	sprintf(state->cfg.mqtt_off_value, "0");
 }
 
 
 void USER_FUNC mqttcli_init(void)
 {
-	struct hfeasy_runtime_config *rtcfg = config_get_rtcfg();
-	struct hfeasy_config *cfg = config_get_cfg();
+	struct hfeasy_state *state = config_get_state();
+	struct hfeasy_config *cfg = &state->cfg;
 	
 	/* start mqtt thread */
 	if (hfthread_create((PHFTHREAD_START_ROUTINE) mqttcli_thread,
@@ -181,13 +208,13 @@ void USER_FUNC mqttcli_init(void)
 	}
 
 	u_printf("waiting for mqtt connection.");
-	while (rtcfg->mqtt_ready == 0) {
+	while (state->mqtt_ready == 0) {
 		u_printf(".");
 		msleep(1000);
 	}
 	u_printf("\r\nready\r\n");
 	
-	u_printf("mqtt subscribe\n");
+	u_printf("mqtt subscribe to '%s'\r\n", cfg->mqtt_sub_topic);
 	mqtt_subscribe(&mqttcli, cfg->mqtt_sub_topic, 0);
 
 	return;
