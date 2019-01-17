@@ -34,10 +34,10 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 	if (strcmp(topic_name, cfg->mqtt_sub_topic) == 0) {
 		if (strcmp(cfg->mqtt_on_value, msg) == 0) {
 			if (state->relay_state != 1)
-				set_relay(1, 0);
+				gpio_set_relay(1, 0);
 		} else if (strcmp(cfg->mqtt_off_value, msg) == 0) {
 			if (state->relay_state != 0)
-				set_relay(0, 0);
+				gpio_set_relay(0, 0);
 		}
 	}
 	

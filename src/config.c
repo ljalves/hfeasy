@@ -10,7 +10,7 @@ struct hfeasy_state state;
 
 
 static const char *config_page =
-	"<!DOCTYPE html><html><head><title>HFeasy config page</title></head><body>"\
+	"<!DOCTYPE html><html><head><title>HFeasy config</title></head><body>"\
 	"<h1>HFeasy config page</h1>"\
 	"<form action=\"/config\" method=\"GET\">"\
 	"MQTT server IP: <input type=\"text\" name=\"mqtt_ip\" value=\"%s\"><br>"\
@@ -23,8 +23,6 @@ static const char *config_page =
 	"</form>"\
 	"<hr><form action=\"/config\" method=\"GET\"><input type=\"submit\" value=\"Save config\" name=\"save\"></form>"\
 	"</body></html>";
-
-
 
 static void USER_FUNC httpd_page_config(char *url, char *rsp)
 {
@@ -75,11 +73,23 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 }
 
 
+static const char *status_page =
+	"<!DOCTYPE html><html><head><title>HFeasy status</title></head><body>"\
+	"MQTT server: %s<br><hr>"\
+	"<h1>GPIO</h1><br>"\
+	"Switch: %s<br>Relay: %s<br>"
+  "</body></html>";
+
+static void USER_FUNC httpd_page_status(char *url, char *rsp)
+{
+	sprintf(rsp, status_page, state.mqtt_ready ? "Connected" : "Disconnected",
+					gpio_get_state(GPIO_SWITCH) ? "High" : "Low",
+					state.relay_state ? "Closed/On" : "Open/Off");
+}
 
 
 static int USER_FUNC hfsys_event_callback(uint32_t event_id, void *param)
 {
-	extern char enaiter_wifi_connected;
 	switch(event_id) {
 		case HFE_WIFI_STA_CONNECTED:
 			u_printf("wifi sta connected!\r\n");
@@ -193,4 +203,5 @@ void USER_FUNC config_init(void)
 	/* register config webpage */
 	httpd_add_page("/config", httpd_page_config);
 
+	httpd_add_page("/status", httpd_page_status);
 }

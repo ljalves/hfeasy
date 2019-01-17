@@ -3,8 +3,14 @@
 
 #include <hsf.h>
 
-void USER_FUNC gpio_init(void);
-void USER_FUNC set_relay(uint8_t action, uint8_t publish);
+/* module */
+#define GPIO_BUZZER		         (HFGPIO_F_USER_DEFINE+0)
+#define GPIO_RELAY		         (HFGPIO_F_USER_DEFINE+1)
+#define GPIO_SWITCH		         (HFGPIO_F_USER_DEFINE+2)
 
+
+void USER_FUNC gpio_init(void);
+void USER_FUNC gpio_set_relay(uint8_t action, uint8_t publish);
+int USER_FUNC gpio_get_state(int fid);
 
 #endif

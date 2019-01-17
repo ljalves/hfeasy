@@ -1,19 +1,23 @@
 
 #include "hfeasy.h"
 
-/* module */
-#define GPIO_BUZZER		         (HFGPIO_F_USER_DEFINE+0)
-#define GPIO_RELAY		         (HFGPIO_F_USER_DEFINE+1)
-#define GPIO_SWITCH		         (HFGPIO_F_USER_DEFINE+2)
 
 
 static hftimer_handle_t debounce_timer;
 static uint8_t debouncing = 0;
 
 
-void USER_FUNC set_relay(uint8_t action, uint8_t publish)
+int USER_FUNC gpio_get_state(int fid)
+{
+	return hfgpio_fpin_is_high(fid) ? 1 : 0;
+}
+
+
+void USER_FUNC gpio_set_relay(uint8_t action, uint8_t publish)
 {
 	struct hfeasy_state *state = config_get_state();
+	char *val;
+	int changed = (action != state->relay_state);
 	
 	switch(action) {
 		default:
@@ -34,15 +38,15 @@ void USER_FUNC set_relay(uint8_t action, uint8_t publish)
 	/* set gpio */
 	if (state->relay_state) {
 		hfgpio_fset_out_high(GPIO_RELAY);
-		if (publish)
-			mqttcli_publish(state->cfg.mqtt_on_value);
+		val = state->cfg.mqtt_on_value;
 	} else {
 		hfgpio_fset_out_low(GPIO_RELAY);
-		if (publish)
-			mqttcli_publish(state->cfg.mqtt_off_value);
+		val = state->cfg.mqtt_off_value;
 	}
+	
+	if (publish && changed)
+		mqttcli_publish(val);
 }
-
 
 static void USER_FUNC switch_state_page(char *url, char *rsp)
 {
@@ -63,9 +67,9 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 	
 	/* set relay */
 	if (strcmp(val, "1") == 0)
-		set_relay(1, 1);
+		gpio_set_relay(1, 1);
 	else
-		set_relay(0, 1);
+		gpio_set_relay(0, 1);
 }
 
 
@@ -79,7 +83,7 @@ static void USER_FUNC switch_irqhandler(uint32_t arg1, uint32_t arg2)
 {
 	if (!debouncing) {
 		hftimer_start(debounce_timer);
-		set_relay(2, 1);
+		gpio_set_relay(2, 1);
 		debouncing = 1;
 	}
 }
