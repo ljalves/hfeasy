@@ -11,6 +11,26 @@ struct httpd_page {
 	{ .url = NULL },
 };
 
+static void USER_FUNC convert_ascii(char *str)
+{
+	char *in, *out, c, s[3] = {0, 0, 0};
+	int i;
+	
+	in = str;
+	out = str;
+	
+	while (*in != '\0') {
+		if (*in == '%') {
+			memcpy(s, in + 1, 2);
+			c = strtol(s, NULL, 16);
+			*(out++) = c;
+			in += 3;
+		} else {
+			*(out++) = *(in++);
+		}
+	}
+	*out = '\0';
+}
 
 int USER_FUNC httpd_arg_find(char *url, char *arg, char *val)
 {
@@ -22,6 +42,7 @@ int USER_FUNC httpd_arg_find(char *url, char *arg, char *val)
 		return 0;
 
 	strcpy(buf, a + 1);
+	convert_ascii(buf);
 	a = strtok(buf, "&");
 	while (a != NULL) {
 		s = strchr(a, '=');
