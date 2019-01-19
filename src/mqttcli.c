@@ -153,10 +153,14 @@ static void* USER_FUNC mqttcli_thread(void* client)
 			case 3:
 				/* running state */
 				{
+					if (state->mqtt_ready == 2)
+						gpio_set_led(0);
+						
 					if (++state->mqtt_ready == MQTT_PING_COUNT) {
 						state->mqtt_ready = 1;
 						mqtt_ping(&mqttcli);
-						u_printf("mqtt ping\r\n");
+						gpio_set_led(1);
+						//u_printf("mqtt ping\r\n");
 					}
 					
 					if (mqtt_sync(c) != MQTT_OK) {
