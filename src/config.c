@@ -1,12 +1,12 @@
 
 #include "hfeasy.h"
 
-struct hfeasy_state state;
-
-
 #define CONFIG_MAGIC_VER1  0xa1
 #define CONFIG_OFFSET      0x00
 #define CONFIG_SIZE        (sizeof(struct hfeasy_config))
+
+struct hfeasy_state state;
+static hftimer_handle_t reset_timer;
 
 
 static void USER_FUNC reboot_timer_handler(hftimer_handle_t timer)
@@ -17,7 +17,7 @@ static void USER_FUNC reboot_timer_handler(hftimer_handle_t timer)
 
 void USER_FUNC reboot(void)
 {
-	hftimer_start(hftimer_create("reboot", 1000, false, 0, reboot_timer_handler, 0));
+	hftimer_start(reset_timer);
 }
 
 static const char *config_page =
@@ -210,6 +210,8 @@ void USER_FUNC config_init(void)
 	if(hfsys_register_system_event((hfsys_event_callback_t) hfsys_event_callback) != HF_SUCCESS)
 		HF_Debug(DEBUG_ERROR,"error registering system event callback\r\n");
 
+	reset_timer = hftimer_create("reboot", 1000, false, HFTIMER_ID_RESET, reboot_timer_handler, 0);
+	
 	/* register config webpage */
 	httpd_add_page("/config", httpd_page_config);
 

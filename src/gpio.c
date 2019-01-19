@@ -142,7 +142,7 @@ void USER_FUNC gpio_init(void)
 
 #if defined(__LPT100F__)
 	hfgpio_configure_fpin(GPIO_BUZZER, HFM_IO_OUTPUT_0);
-	buzzer_timer = hftimer_create("buzzer", 200, false, 0, buzzer_timer_handler, 0);
+	buzzer_timer = hftimer_create("buzzer", 200, false, HFTIMER_ID_BUZZER, buzzer_timer_handler, 0);
 
 	if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH,
 				HFM_IO_TYPE_INPUT | HFPIO_IT_EDGE | HFPIO_PULLUP,
@@ -157,7 +157,7 @@ void USER_FUNC gpio_init(void)
 #endif
 	
 
-	debounce_timer = hftimer_create("debouncer", 200, false, 0, debounce_timer_handler, 0);
+	debounce_timer = hftimer_create("debouncer", 200, false, HFTIMER_ID_DEBOUNCE, debounce_timer_handler, 0);
 
 	httpd_add_page("/state", switch_state_page);
 }
