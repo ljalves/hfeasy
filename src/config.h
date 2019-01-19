@@ -8,12 +8,15 @@ struct hfeasy_config {
 	uint8_t		ver;
 	
 	/* mqtt server */
-	char	mqtt_server_hostname[50];
-	uint16_t	mqtt_server_port;
-	char			mqtt_pub_topic[20];
-	char			mqtt_sub_topic[20];
-	char			mqtt_on_value[10];
-	char			mqtt_off_value[10];
+	char      mqtt_server_hostname[50];
+	uint16_t  mqtt_server_port;
+	char      mqtt_server_user[30];
+	char      mqtt_server_pass[30];
+	char      mqtt_pub_topic[20];
+	char      mqtt_sub_topic[20];
+	char      mqtt_on_value[10];
+	char      mqtt_off_value[10];
+	
 };
 
 struct hfeasy_state {

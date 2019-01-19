@@ -1,7 +1,7 @@
 
 #include "hfeasy.h"
 
-#define CONFIG_MAGIC_VER1  0xa1
+#define CONFIG_MAGIC_VER1  0xa2
 #define CONFIG_OFFSET      0x00
 #define CONFIG_SIZE        (sizeof(struct hfeasy_config))
 
@@ -40,6 +40,8 @@ static const char *config_page =
 	"<form action=\"/config\" method=\"GET\">"\
 	"MQTT server IP: <input type=\"text\" name=\"mqtt_hostname\" value=\"%s\"><br>"\
 	"MQTT server port (0=disabled): <input type=\"text\" name=\"mqtt_port\" value=\"%d\"><br>"\
+	"MQTT server username: <input type=\"text\" name=\"mqtt_user\" value=\"%s\"><br>"\
+	"MQTT server password: <input type=\"password\" name=\"mqtt_pass\" value=\"%s\"><br>"\
 	"Subscribe topic: <input type=\"text\" name=\"mqtt_sub_topic\" value=\"%s\"><br>"\
 	"Publish topic: <input type=\"text\" name=\"mqtt_pub_topic\" value=\"%s\"><br>"\
 	"ON value: <input type=\"text\" name=\"mqtt_on_value\" value=\"%s\"><br>"\
@@ -62,6 +64,14 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 	ret = httpd_arg_find(url, "mqtt_port", tmp);
 	if (ret > 0)
 		state.cfg.mqtt_server_port = atoi(tmp);
+
+	ret = httpd_arg_find(url, "mqtt_user", tmp);
+	if (ret > 0)
+		strcpy(state.cfg.mqtt_server_user, tmp);
+
+	ret = httpd_arg_find(url, "mqtt_pass", tmp);
+	if (ret > 0)
+		strcpy(state.cfg.mqtt_server_pass, tmp);
 
 	ret = httpd_arg_find(url, "mqtt_sub_topic", tmp);
 	if (ret > 0)
@@ -87,12 +97,12 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 	
 	sprintf(rsp, config_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
 					state.cfg.mqtt_server_hostname, state.cfg.mqtt_server_port,
+					state.cfg.mqtt_server_user, state.cfg.mqtt_server_pass,
 					state.cfg.mqtt_sub_topic, state.cfg.mqtt_pub_topic,
 					state.cfg.mqtt_on_value, state.cfg.mqtt_off_value);
 
 	u_printf("page_size=%d\r\n", strlen(rsp));
 }
-
 
 static const char *status_page =
 	"<!DOCTYPE html><html><head><title>HFeasy status v%d.%d</title></head><body>"\
@@ -151,12 +161,10 @@ static int USER_FUNC hfsys_event_callback(uint32_t event_id, void *param)
 	return 0;
 }
 
-
 struct hfeasy_state* USER_FUNC config_get_state(void)
 {
 	return &state;
 }
-
 
 static uint8_t USER_FUNC get_macaddr(void)
 {
@@ -180,25 +188,22 @@ static uint8_t USER_FUNC get_macaddr(void)
 				p += 2;
 				state.mac_addr[i] = strtol(tmp, NULL, 16);
 			}
-			u_printf("%02x:%02x:%02x:%02x:%02x:%02x",
+			/*u_printf("%02x:%02x:%02x:%02x:%02x:%02x",
 						(int) state.mac_addr[0], (int) state.mac_addr[1],
 						(int) state.mac_addr[2], (int) state.mac_addr[3],
 						(int) state.mac_addr[4], (int) state.mac_addr[5]
-			);
+			);*/
 			ret = 1;
 		}
 	}
 	return ret;
 }
 
-
-
 void USER_FUNC config_save(void)
 {
 	hffile_userbin_write(CONFIG_OFFSET, (char*) &state.cfg, CONFIG_SIZE);
 	u_printf("saving config to flash. size=%d\r\n", CONFIG_SIZE);
 }
-	
 
 static void USER_FUNC config_load(uint8_t reset)
 {
@@ -210,6 +215,7 @@ static void USER_FUNC config_load(uint8_t reset)
 	u_printf("loading config from flash. size=%d magic=%02x reset=%d\r\n", CONFIG_SIZE, state.cfg.ver, reset);
 	if (state.cfg.ver != CONFIG_MAGIC_VER1) {
 		/* init config data */
+		memset(&state.cfg, 0, sizeof(struct hfeasy_config));
 		state.cfg.ver = CONFIG_MAGIC_VER1;
 		mqttcli_initcfg();
 		
@@ -218,7 +224,6 @@ static void USER_FUNC config_load(uint8_t reset)
 	}
 	
 }
-
 
 void USER_FUNC config_init(void)
 {
@@ -230,8 +235,7 @@ void USER_FUNC config_init(void)
 	reset_timer = hftimer_create("reboot", 1000, false, HFTIMER_ID_RESET, reboot_timer_handler, 0);
 	led_timer = hftimer_create("led", 400, false, 3, led_timer_handler, 0);
 	
-	/* register config webpage */
+	/* register webpages */
 	httpd_add_page("/config", httpd_page_config);
-
 	httpd_add_page("/status", httpd_page_status);
 }

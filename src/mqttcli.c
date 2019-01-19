@@ -99,9 +99,9 @@ int USER_FUNC mqttcli_connect(void)
 
 static void* USER_FUNC mqttcli_thread(void* client)
 {
-	struct mqtt_client *c = client;
-	static uint8_t STATE = 0;
 	struct hfeasy_state *state = config_get_state();
+	struct mqtt_client *c = (struct mqtt_client*) client;
+	static uint8_t STATE = 0;
 	
 	while(1) {
 		//u_printf("mqttcli_thread STATE=%d\r\n", STATE);
@@ -134,9 +134,11 @@ static void* USER_FUNC mqttcli_thread(void* client)
 				{
 					int fd = mqttcli_connect();
 					if (fd >= 0) {
+						char *user = strlen(state->cfg.mqtt_server_user) == 0 ? NULL : state->cfg.mqtt_server_user;
+						char *pass = strlen(state->cfg.mqtt_server_pass) == 0 ? NULL : state->cfg.mqtt_server_pass;
 						/* connected, init mqtt */
 						mqtt_init(client, fd, txbuf, MQTT_TX_BUF_SIZE, rxbuf, MQTT_RX_BUF_SIZE, publish_callback);
-						mqtt_connect(client, state->mac_addr_s, NULL, NULL, 0, NULL, NULL, 0, 400);
+						mqtt_connect(client, state->mac_addr_s, NULL, NULL, 0, user, pass, 0, 400);
 						if (c->error != MQTT_OK) {
 							u_printf("error: %s\n", mqtt_error_str(c->error));
 							STATE = 49;
