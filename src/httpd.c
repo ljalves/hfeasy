@@ -14,7 +14,6 @@ struct httpd_page {
 static void USER_FUNC convert_ascii(char *str)
 {
 	char *in, *out, c, s[3] = {0, 0, 0};
-	int i;
 	
 	in = str;
 	out = str;
