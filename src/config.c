@@ -4,16 +4,27 @@
 struct hfeasy_state state;
 
 
-#define CONFIG_MAGIC_VER1  0xa0
+#define CONFIG_MAGIC_VER1  0xa1
 #define CONFIG_OFFSET      0x00
 #define CONFIG_SIZE        (sizeof(struct hfeasy_config))
 
 
+static void USER_FUNC reboot_timer_handler(hftimer_handle_t timer)
+{
+	char rsp[50];
+	hfat_send_cmd("AT+Z\r\n", sizeof("AT+Z\r\n"), rsp, 64);
+}
+
+void USER_FUNC reboot(void)
+{
+	hftimer_start(hftimer_create("reboot", 1000, false, 0, reboot_timer_handler, 0));
+}
+
 static const char *config_page =
-	"<!DOCTYPE html><html><head><title>HFeasy config</title></head><body>"\
+	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title></head><body>"\
 	"<h1>HFeasy config page</h1>"\
 	"<form action=\"/config\" method=\"GET\">"\
-	"MQTT server IP: <input type=\"text\" name=\"mqtt_ip\" value=\"%s\"><br>"\
+	"MQTT server IP: <input type=\"text\" name=\"mqtt_hostname\" value=\"%s\"><br>"\
 	"MQTT server port (0=disabled): <input type=\"text\" name=\"mqtt_port\" value=\"%d\"><br>"\
 	"Subscribe topic: <input type=\"text\" name=\"mqtt_sub_topic\" value=\"%s\"><br>"\
 	"Publish topic: <input type=\"text\" name=\"mqtt_pub_topic\" value=\"%s\"><br>"\
@@ -21,25 +32,18 @@ static const char *config_page =
 	"OFF value: <input type=\"text\" name=\"mqtt_off_value\" value=\"%s\"><br>"\
 	"<input type=\"submit\" value=\"Update\">"\
 	"</form>"\
-	"<hr><form action=\"/config\" method=\"GET\"><input type=\"submit\" value=\"Save config\" name=\"save\"></form>"\
+	"<hr><form action=\"/config\" method=\"GET\"><input type=\"submit\" value=\"Save and reboot\" name=\"save\"></form>"\
 	"</body></html>";
 
 static void USER_FUNC httpd_page_config(char *url, char *rsp)
 {
-	char mqtt_ip[20];
+	//char mqtt_ip[20];
 	char tmp[50];
 	int ret;
 	
-	ret = httpd_arg_find(url, "mqtt_ip", mqtt_ip);
+	ret = httpd_arg_find(url, "mqtt_hostname", tmp);
 	if (ret > 0)
-		inet_aton(mqtt_ip, (ip_addr_t *) &state.cfg.mqtt_server_ip);
-	else
-		sprintf(mqtt_ip, "%d.%d.%d.%d",
-				state.cfg.mqtt_server_ip & 0xff,
-				(state.cfg.mqtt_server_ip >> 8) & 0xff,
-				(state.cfg.mqtt_server_ip >> 16) & 0xff,
-				(state.cfg.mqtt_server_ip >> 24) & 0xff);
-	
+		strcpy(state.cfg.mqtt_server_hostname, tmp);
 	
 	ret = httpd_arg_find(url, "mqtt_port", tmp);
 	if (ret > 0)
@@ -62,29 +66,35 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 		strcpy(state.cfg.mqtt_off_value, tmp);
 
 	ret = httpd_arg_find(url, "save", tmp);
-	if (ret > 0)
+	if (ret > 0) {
 		config_save();
+		reboot();
+	}
 	
-	sprintf(rsp, config_page, mqtt_ip, state.cfg.mqtt_server_port,
+	sprintf(rsp, config_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
+					state.cfg.mqtt_server_hostname, state.cfg.mqtt_server_port,
 					state.cfg.mqtt_sub_topic, state.cfg.mqtt_pub_topic,
 					state.cfg.mqtt_on_value, state.cfg.mqtt_off_value);
 
-	u_printf("config: ip_s=%s ip_n=%08x page_size=%d\r\n", mqtt_ip, state.cfg.mqtt_server_ip, strlen(rsp));
+	u_printf("page_size=%d\r\n", strlen(rsp));
 }
 
 
 static const char *status_page =
-	"<!DOCTYPE html><html><head><title>HFeasy status</title></head><body>"\
-	"MQTT server: %s<br><hr>"\
-	"<h1>GPIO</h1><br>"\
-	"Switch: %s<br>Relay: %s<br>"
+	"<!DOCTYPE html><html><head><title>HFeasy status v%d.%d</title></head><body>"\
+	"<h1>HF Easy module status</h1><hr>"\
+	"<h2>GPIO status</h2><br>"\
+	"Switch: %s<br>Relay: %s<br><hr>"
+	"<h2>Connectivity</h2>"\
+	"MQTT server: %s"\
   "</body></html>";
 
 static void USER_FUNC httpd_page_status(char *url, char *rsp)
 {
-	sprintf(rsp, status_page, state.mqtt_ready ? "Connected" : "Disconnected",
+	sprintf(rsp, status_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
+					state.relay_state ? "Closed" : "Open",
 					gpio_get_state(GPIO_SWITCH) ? "High" : "Low",
-					state.relay_state ? "Closed/On" : "Open/Off");
+					state.mqtt_ready ? "Connected" : "Disconnected");
 }
 
 

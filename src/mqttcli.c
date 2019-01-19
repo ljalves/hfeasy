@@ -46,19 +46,23 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 }
 
 
-
 int USER_FUNC mqttcli_connect(void)
 {
 	struct hfeasy_state *state = config_get_state();
 	struct sockaddr_in addr;
+	ip_addr_t server_addr;
 	int fd, tmp;
 	
-	memset((char*)&addr, 0, sizeof(addr));
+	if (hfnet_gethostbyname(state->cfg.mqtt_server_hostname, &server_addr) != HF_SUCCESS)
+		return -1;
 	
+	if (inet_aton(state->cfg.mqtt_server_hostname, &server_addr) == 0)
+		return -1;
+	
+	memset((char*)&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
-	/* TODO: change ip:port to user config */
 	addr.sin_port = htons(state->cfg.mqtt_server_port);
-	addr.sin_addr.s_addr=inet_addr("192.168.222.226");
+	addr.sin_addr.s_addr = server_addr.addr;
 
 	fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (fd < 0)
@@ -181,7 +185,8 @@ static void* USER_FUNC mqttcli_thread(void* client)
 void USER_FUNC mqttcli_publish(char *value)
 {
 	struct hfeasy_state *state = config_get_state();
-	mqtt_publish(&mqttcli, state->cfg.mqtt_pub_topic, value, strlen(value) , MQTT_PUBLISH_QOS_0);
+	if (state->mqtt_ready)
+		mqtt_publish(&mqttcli, state->cfg.mqtt_pub_topic, value, strlen(value) , MQTT_PUBLISH_QOS_0);
 }
 
 

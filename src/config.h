@@ -8,7 +8,7 @@ struct hfeasy_config {
 	uint8_t		ver;
 	
 	/* mqtt server */
-	uint32_t	mqtt_server_ip;
+	char	mqtt_server_hostname[50];
 	uint16_t	mqtt_server_port;
 	char			mqtt_pub_topic[20];
 	char			mqtt_sub_topic[20];
@@ -30,6 +30,7 @@ struct hfeasy_state {
 
 void USER_FUNC config_init(void);
 void USER_FUNC config_save(void);
+void USER_FUNC reboot(void);
 
 struct hfeasy_state* USER_FUNC config_get_state(void);
 
