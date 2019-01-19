@@ -1439,18 +1439,16 @@ ssize_t mqtt_pack_subscribe_request(uint8_t *buf, size_t bufsz, uint16_t packet_
     /* parse all subscriptions */
     va_start(args, packet_id);
     while(1) {
-        topic[num_subs] = va_arg(args, const char*);
-        if (topic[num_subs] == NULL) {
+        const char *t = va_arg(args, const char*);
+        if (t == NULL) {
             /* end of list */
             break;
         }
-
-        max_qos[num_subs] = (uint8_t) va_arg(args, unsigned int);
-
-        ++num_subs;
         if (num_subs >= MQTT_SUBSCRIBE_REQUEST_MAX_NUM_TOPICS) {
             return MQTT_ERROR_SUBSCRIBE_TOO_MANY_TOPICS;
         }
+        max_qos[num_subs] = (uint8_t) va_arg(args, unsigned int);
+        topic[num_subs++] = t;
     }
     va_end(args);
 
