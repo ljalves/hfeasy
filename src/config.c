@@ -6,7 +6,7 @@
 #define CONFIG_SIZE        (sizeof(struct hfeasy_config))
 
 struct hfeasy_state state;
-static hftimer_handle_t reset_timer;
+static hftimer_handle_t reset_timer, led_timer;
 
 
 static void USER_FUNC reboot_timer_handler(hftimer_handle_t timer)
@@ -19,6 +19,20 @@ void USER_FUNC reboot(void)
 {
 	hftimer_start(reset_timer);
 }
+
+static void USER_FUNC led_timer_handler(hftimer_handle_t timer)
+{
+	static char led = 0;
+	
+	led ^= 1;
+	if (state.mqtt_ready == 0) {
+		gpio_set_led(led);
+		hftimer_start(timer);
+	} else {
+		gpio_set_led(0);
+	}
+}
+
 
 static const char *config_page =
 	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title></head><body>"\
@@ -103,11 +117,13 @@ static int USER_FUNC hfsys_event_callback(uint32_t event_id, void *param)
 	switch(event_id) {
 		case HFE_WIFI_STA_CONNECTED:
 			u_printf("wifi sta connected!\r\n");
+			hftimer_change_period(led_timer, 600);
 			break;
 			
 		case HFE_WIFI_STA_DISCONNECTED:
 			state.has_ip = 0;
 			u_printf("wifi sta disconnected!\r\n");
+			hftimer_change_period(led_timer, 200);
 			break;
 			
 		case HFE_DHCP_OK:
@@ -117,6 +133,7 @@ static int USER_FUNC hfsys_event_callback(uint32_t event_id, void *param)
 				HF_Debug(DEBUG_WARN, "dhcp ok %08X!\r\n", *p_ip);
 				u_printf("dhcp ok %08X!", *p_ip);
 				state.has_ip = 1;
+				hftimer_change_period(led_timer, 1000);
 			}
 			break;
 		
@@ -211,6 +228,7 @@ void USER_FUNC config_init(void)
 		HF_Debug(DEBUG_ERROR,"error registering system event callback\r\n");
 
 	reset_timer = hftimer_create("reboot", 1000, false, HFTIMER_ID_RESET, reboot_timer_handler, 0);
+	led_timer = hftimer_create("led", 400, false, 3, led_timer_handler, 0);
 	
 	/* register config webpage */
 	httpd_add_page("/config", httpd_page_config);
