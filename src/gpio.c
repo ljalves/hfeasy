@@ -35,6 +35,15 @@ inline int USER_FUNC gpio_get_state(int fid)
 	return hfgpio_fpin_is_high(fid) ? 1 : 0;
 }
 
+void USER_FUNC gpio_set_led(uint8_t st)
+{
+#if defined (__LPB100__)
+	if (st)
+		hfgpio_fset_out_low(GPIO_LED);
+	else
+		hfgpio_fset_out_high(GPIO_LED);
+#endif
+}
 
 void USER_FUNC gpio_set_relay(uint8_t action, uint8_t publish)
 {
@@ -99,11 +108,11 @@ static void USER_FUNC debounce_timer_handler(hftimer_handle_t timer)
 {
 #if defined (__LPB100__)
 	struct hfeasy_state *state = config_get_state();
-	char rsp[64]={0};
+	char rsp[64] = {0};
 
 	if (gpio_get_state(GPIO_SWITCH) == 0) {
 		if (++debouncing > 5 * 3) {
-			hfgpio_fset_out_low(GPIO_LED);
+			gpio_set_led(1);
 	
 			hfat_send_cmd("AT+WMODE=AP\r\n", sizeof("AT+WMODE=AP\r\n"), rsp, 32);
 			state->cfg.ver = 0;
