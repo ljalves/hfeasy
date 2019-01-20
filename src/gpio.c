@@ -95,7 +95,6 @@ static void USER_FUNC recovery_mode(void)
 	reboot();
 }
 
-#if defined(__LPT100F__)
 static void USER_FUNC recovery_timer_handler(hftimer_handle_t timer)
 {
 	if (key_counter == 6) {
@@ -103,16 +102,11 @@ static void USER_FUNC recovery_timer_handler(hftimer_handle_t timer)
 	}
 	key_counter = 0;
 }
-#endif
 
 static void USER_FUNC debounce_timer_handler(hftimer_handle_t timer)
 {
 #if defined (__LPB100__)
 	if (gpio_get_state(GPIO_SWITCH) == 0) {
-		if (++key_counter > 5 * 3) {
-			gpio_set_led(1);
-			recovery_mode();
-		}
 		hftimer_start(timer);
 } else
 #endif
@@ -125,10 +119,9 @@ static void USER_FUNC switch_irqhandler(uint32_t arg1, uint32_t arg2)
 	gpio_set_relay(2, 1);
 	hftimer_start(debounce_timer);
 
-#if defined(__LPT100F__)
 	if (key_counter == 0)
 		hftimer_start(recovery_timer);
-#endif
+
 	key_counter++;
 }
 
@@ -142,8 +135,6 @@ void USER_FUNC gpio_init(void)
 				HFM_IO_TYPE_INPUT | HFPIO_IT_EDGE | HFPIO_PULLUP,
 				switch_irqhandler, 1) != HF_SUCCESS)
 		u_printf("failed to add switch interrupt\n");
-	recovery_timer = hftimer_create("recovery", 2000, false, HFTIMER_ID_DEBOUNCE, recovery_timer_handler, 0);
-	hftimer_start(recovery_timer);
 #elif defined(__LPB100__)
 	hfgpio_configure_fpin(GPIO_LED, HFM_IO_OUTPUT_1);
 	if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH,
@@ -153,6 +144,8 @@ void USER_FUNC gpio_init(void)
 #endif
 
 	debounce_timer = hftimer_create("debouncer", 200, false, HFTIMER_ID_DEBOUNCE, debounce_timer_handler, 0);
+	recovery_timer = hftimer_create("recovery", 2000, false, HFTIMER_ID_DEBOUNCE, recovery_timer_handler, 0);
+	hftimer_start(recovery_timer);
 
 	httpd_add_page("/state", switch_state_page);
 }
