@@ -189,9 +189,9 @@ const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
 	HFM_NOPIN,		//HFGPIO_F_RESERVE4
 	HFM_NOPIN,		//HFGPIO_F_RESERVE5
 	
-	HF_M_PIN(30),	//HFGPIO_F_KEY //HFGPIO_F_USER_DEFINE
 	HF_M_PIN(43),	//HFGPIO_F_WIFI_LED
 	HF_M_PIN(44),	//HFGPIO_F_SWITCH
+	HF_M_PIN(30),	//HFGPIO_F_KEY //HFGPIO_F_USER_DEFINE
 };
 #elif defined(__LPB100U__)
 static int module_type = HFM_TYPE_LPB100;

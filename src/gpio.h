@@ -3,16 +3,11 @@
 
 #include <hsf.h>
 
-/* module */
-#if defined(__LPT100F__)
-	#define GPIO_BUZZER            (HFGPIO_F_USER_DEFINE+0)
-	#define GPIO_RELAY             (HFGPIO_F_USER_DEFINE+1)
-	#define GPIO_SWITCH            (HFGPIO_F_USER_DEFINE+2)
-#elif defined(__LPB100__)
-	#define GPIO_SWITCH            (HFGPIO_F_USER_DEFINE+0)
-	#define GPIO_LED               (HFGPIO_F_USER_DEFINE+1)
-	#define GPIO_RELAY             (HFGPIO_F_USER_DEFINE+2)
-#endif
+#define GPIO_BUZZER            (HFGPIO_F_USER_DEFINE+0)
+#define GPIO_LED               (HFGPIO_F_USER_DEFINE+0)
+#define GPIO_RELAY             (HFGPIO_F_USER_DEFINE+1)
+#define GPIO_SWITCH            (HFGPIO_F_USER_DEFINE+2)
+
 
 void USER_FUNC gpio_init(void);
 void USER_FUNC gpio_set_relay(uint8_t action, uint8_t publish);
