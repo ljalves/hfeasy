@@ -2,8 +2,8 @@
 #include "hfeasy.h"
 
 
-static hftimer_handle_t debounce_timer;
-static uint8_t debouncing = 0;
+static hftimer_handle_t debounce_timer, recovery_timer;
+static uint8_t key_counter;
 
 inline int USER_FUNC gpio_get_state(int fid)
 {
@@ -84,36 +84,52 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 		gpio_set_relay(0, 1);
 }
 
+static void USER_FUNC recovery_mode(void)
+{
+	struct hfeasy_state *state = config_get_state();
+	char rsp[64] = {0};
+
+	hfat_send_cmd("AT+WMODE=AP\r\n", sizeof("AT+WMODE=AP\r\n"), rsp, 32);
+	state->cfg.ver = 0;
+	config_save();
+	reboot();
+}
+
+#if defined(__LPT100F__)
+static void USER_FUNC recovery_timer_handler(hftimer_handle_t timer)
+{
+	if (key_counter == 6) {
+		recovery_mode();
+	}
+	key_counter = 0;
+}
+#endif
 
 static void USER_FUNC debounce_timer_handler(hftimer_handle_t timer)
 {
 #if defined (__LPB100__)
-	struct hfeasy_state *state = config_get_state();
-	char rsp[64] = {0};
-
 	if (gpio_get_state(GPIO_SWITCH) == 0) {
-		if (++debouncing > 5 * 3) {
+		if (++key_counter > 5 * 3) {
 			gpio_set_led(1);
-	
-			hfat_send_cmd("AT+WMODE=AP\r\n", sizeof("AT+WMODE=AP\r\n"), rsp, 32);
-			state->cfg.ver = 0;
-			config_save();
-			reboot();
+			recovery_mode();
 		}
-
 		hftimer_start(timer);
 } else
 #endif
-	debouncing = 0;
+		hfgpio_fenable_interrupt(GPIO_SWITCH);
 }
 
 static void USER_FUNC switch_irqhandler(uint32_t arg1, uint32_t arg2)
 {
-	if (!debouncing) {
-		hftimer_start(debounce_timer);
-		gpio_set_relay(2, 1);
-		debouncing = 1;
-	}
+	hfgpio_fdisable_interrupt(GPIO_SWITCH);
+	gpio_set_relay(2, 1);
+	hftimer_start(debounce_timer);
+
+#if defined(__LPT100F__)
+	if (key_counter == 0)
+		hftimer_start(recovery_timer);
+#endif
+	key_counter++;
 }
 
 void USER_FUNC gpio_init(void)
@@ -126,6 +142,8 @@ void USER_FUNC gpio_init(void)
 				HFM_IO_TYPE_INPUT | HFPIO_IT_EDGE | HFPIO_PULLUP,
 				switch_irqhandler, 1) != HF_SUCCESS)
 		u_printf("failed to add switch interrupt\n");
+	recovery_timer = hftimer_create("recovery", 2000, false, HFTIMER_ID_DEBOUNCE, recovery_timer_handler, 0);
+	hftimer_start(recovery_timer);
 #elif defined(__LPB100__)
 	hfgpio_configure_fpin(GPIO_LED, HFM_IO_OUTPUT_1);
 	if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH,
@@ -133,7 +151,6 @@ void USER_FUNC gpio_init(void)
 				switch_irqhandler, 1) != HF_SUCCESS)
 		u_printf("failed to add switch interrupt\n");
 #endif
-	
 
 	debounce_timer = hftimer_create("debouncer", 200, false, HFTIMER_ID_DEBOUNCE, debounce_timer_handler, 0);
 
