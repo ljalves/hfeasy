@@ -1,24 +1,35 @@
-/**
- * \file
- *
- * \brief Empty user application template
- *
- */
+/* HFeasy
 
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <stdio.h>
+Copyright (c) 2019 Luis Alves
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
 
 #include "hfeasy.h"
 
 #if (defined(__LPT100__)||defined(__LPT100F__)) 
 #ifdef __LPT100F__
-static int module_type = HFM_TYPE_LPT100F;// macro definition module type
+static int module_type = HFM_TYPE_LPT100F;
 #else
 static int module_type = HFM_TYPE_LPT100;
 #endif
-const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
+const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE] =
 {
 	HF_M_PIN(2),	//HFGPIO_F_JTAG_TCK
 	HF_M_PIN(3),	//HFGPIO_F_JTAG_TDO
@@ -101,7 +112,7 @@ const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
 	HFM_NOPIN,	//HFGPIO_F_USER_DEFINE
 };
 #elif defined(__LPT200__)
-static int module_type= HFM_TYPE_LPT200;
+static int module_type = HFM_TYPE_LPT200;
 const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
 {
 	HF_M_PIN(2),	//HFGPIO_F_JTAG_TCK
@@ -141,7 +152,7 @@ const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
 	HFM_NOPIN,	//HFGPIO_F_USER_DEFINE
 };
 #elif defined(__LPB100__)// lpb100 pin definition, refer to the user manual
-static int module_type= HFM_TYPE_LPB100;
+static int module_type = HFM_TYPE_LPB100;
 const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
 {
 	HF_M_PIN(2),	//HFGPIO_F_JTAG_TCK
@@ -183,7 +194,7 @@ const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
 	HF_M_PIN(44),	//HFGPIO_F_SWITCH
 };
 #elif defined(__LPB100U__)
-static int module_type= HFM_TYPE_LPB100;
+static int module_type = HFM_TYPE_LPB100;
 const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
 {
 	HF_M_PIN(2),	//HFGPIO_F_JTAG_TCK
@@ -297,6 +308,7 @@ int USER_FUNC app_main(void)
 	config_init();
 	httpd_init();
 	gpio_init();
+	buzzer_init();
 	mqttcli_init();
 		
 	return 1;

@@ -6,11 +6,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <time.h>
 
 #include "config.h"
 #include "gpio.h"
 #include "httpd.h"
 #include "mqttcli.h"
+#include "buzzer.h"
 
 
 #define HFEASY_VERSION_MAJOR	0

@@ -2,33 +2,8 @@
 #include "hfeasy.h"
 
 
-
 static hftimer_handle_t debounce_timer;
 static uint8_t debouncing = 0;
-
-#if defined (__LPT100F__)
-static hftimer_handle_t buzzer_timer;
-static void USER_FUNC buzzer_timer_handler(hftimer_handle_t timer)
-{
-	static uint16_t f = 200, t = 1, i = 0;
-
-	if (i >100) {
-		hfgpio_pwm_disable(GPIO_BUZZER);
-		hfgpio_fset_out_low(GPIO_BUZZER);
-		f = 200;
-		t = 1;
-		i = 0;
-	} else {
-		hftimer_change_period(buzzer_timer, 1);
-		hfgpio_pwm_enable(GPIO_BUZZER, f++, 1);
-	}
-}
-
-void USER_FUNC gpio_buzzer_play(void)
-{
-	hftimer_start(buzzer_timer);
-}
-#endif
 
 inline int USER_FUNC gpio_get_state(int fid)
 {
@@ -85,17 +60,23 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 	char val[20];
 	int ret;
 
+	ret = httpd_arg_find(url, "tone", val);
+	if (ret == 1) {
+		buzzer_play(atoi(val));
+		u_printf("playing tone %d\r\n", atoi(val));
+	}
+
 	ret = httpd_arg_find(url, "sw", val);
 	if (ret == 2)
 		strcpy(val, "none");
-	
+
 	sprintf(rsp, "<html><head><title>SWITCH STATE</title></head>" \
 							 "<body>SWITCH STATE WEB PAGE<br>" \
 							 "ret=%d, sw='%s'" \
 							 "</body></html>", ret, val);
 
 	u_printf("ret=%d, sw='%s', page '%s' served\r\n", ret, val, url);	
-	
+
 	/* set relay */
 	if (strcmp(val, "1") == 0)
 		gpio_set_relay(1, 1);
@@ -141,9 +122,6 @@ void USER_FUNC gpio_init(void)
 	hfgpio_configure_fpin(GPIO_RELAY, HFM_IO_OUTPUT_0);
 
 #if defined(__LPT100F__)
-	hfgpio_configure_fpin(GPIO_BUZZER, HFM_IO_OUTPUT_0);
-	buzzer_timer = hftimer_create("buzzer", 200, false, HFTIMER_ID_BUZZER, buzzer_timer_handler, 0);
-
 	if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH,
 				HFM_IO_TYPE_INPUT | HFPIO_IT_EDGE | HFPIO_PULLUP,
 				switch_irqhandler, 1) != HF_SUCCESS)

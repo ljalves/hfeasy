@@ -456,6 +456,11 @@
               <FileType>1</FileType>
               <FilePath>..\src\gpio.c</FilePath>
             </File>
+            <File>
+              <FileName>buzzer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\buzzer.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -919,6 +924,11 @@
               <FileName>gpio.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\gpio.c</FilePath>
+            </File>
+            <File>
+              <FileName>buzzer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\buzzer.c</FilePath>
             </File>
           </Files>
         </Group>
