@@ -26,17 +26,14 @@ After flashing hfeasy, you'll have access to the following web pages:
 
 
 # Firmware
+* [Download here](https://drive.google.com/open?id=1I63C3kWmOFIg8bhawXwCa4fVwSPf7Njz)
 * hfeasy 0v2
-  * [Plug](https://drive.google.com/open?id=1lOXtpJZfeAYZpBEu5qtUfYp__SABL1vK)
-  * [Module](https://drive.google.com/open?id=1ghLQwi1RhygBadSv7uJ0LS6yPSKVlwi9)
   * Changes:
     * Added MQTT authentication
     * Added recovery mode for both devices: press the switch 6 times withing 2 sec and the device enters AP mode and resets config
-    * Added buzzer driver. Right now just for fun, try: http://\<ip\>/state?tone=3 (dont go > 3)
-  
+    * Added buzzer driver. Right now just for fun, try: http://\<ip\>/state?tone=3 (dont go > 21)
 * haeasy 0v1
-  * [Plug](https://drive.google.com/open?id=1eRtJjA7Dd28m64O0pGRHo6_lasVvcpur)
-  * [Module](https://drive.google.com/open?id=1KVt4QvOLIY-WCWgONfWG1eNCMGK019AO)
+  * Initial release
 
 * Original firmware (in case you want to go back):
   * [Plug](http://lumitek.yunext.com/files/DF_1_5114.bin)
