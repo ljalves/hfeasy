@@ -3,101 +3,9 @@
 
 
 
-#if (defined(__LPT100__)||defined(__LPT100F__)) 
-#ifdef __LPT100F__
-static int module_type = HFM_TYPE_LPT100F;
-#else
-static int module_type = HFM_TYPE_LPT100;
-#endif
-const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE] =
-{
-	HF_M_PIN(2),	//HFGPIO_F_JTAG_TCK
-	HF_M_PIN(3),	//HFGPIO_F_JTAG_TDO
-	HF_M_PIN(4),	//HFGPIO_F_JTAG_TDI
-	HF_M_PIN(5),	//HFGPIO_F_JTAG_TMS
-	HFM_NOPIN,		//HFGPIO_F_USBDP
-	HFM_NOPIN,		//HFGPIO_F_USBDM
-	HF_M_PIN(39),	//HFGPIO_F_UART0_TX
-	HF_M_PIN(40),	//HFGPIO_F_UART0_RTS
-	HF_M_PIN(41),	//HFGPIO_F_UART0_RX
-	HF_M_PIN(42),	//HFGPIO_F_UART0_CTS
-	
-	HF_M_PIN(27),	//HFGPIO_F_SPI_MISO
-	HF_M_PIN(28),	//HFGPIO_F_SPI_CLK
-	HF_M_PIN(29),	//HFGPIO_F_SPI_CS
-	HF_M_PIN(30),	//HFGPIO_F_SPI_MOSI
-	
-	HFM_NOPIN,	//HFGPIO_F_UART1_TX,
-	HFM_NOPIN,	//HFGPIO_F_UART1_RTS,
-	HFM_NOPIN,	//HFGPIO_F_UART1_RX,
-	HFM_NOPIN,	//HFGPIO_F_UART1_CTS,
-	
-	HFM_NOPIN, //HF_M_PIN(11),	//HFGPIO_F_NLINK
-	HFM_NOPIN, //HF_M_PIN(12),	//HFGPIO_F_NREADY
-	HF_M_PIN(45),	//HFGPIO_F_NRELOAD
-	HFM_NOPIN,	//HFGPIO_F_SLEEP_RQ
-	HFM_NOPIN,	//HFGPIO_F_SLEEP_ON
-	
-	HFM_NOPIN, //HF_M_PIN(18),	//HFGPIO_F_WPS
-	HFM_NOPIN,		//HFGPIO_F_RESERVE1
-	HFM_NOPIN,		//HFGPIO_F_RESERVE2
-	HFM_NOPIN,		//HFGPIO_F_RESERVE3
-	HFM_NOPIN,		//HFGPIO_F_RESERVE4
-	HFM_NOPIN,		//HFGPIO_F_RESERVE5
-	
-	HF_M_PIN(12),	//	buzzer
-	HF_M_PIN(11),	//	relay
-	HF_M_PIN(18),	//	switch/button
-};
-#elif defined(__LPB100__)
-static int module_type = HFM_TYPE_LPB100;
-const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
-{
-	HF_M_PIN(2),	//HFGPIO_F_JTAG_TCK
-	HFM_NOPIN,	//HFGPIO_F_JTAG_TDO
-	HFM_NOPIN,	//HFGPIO_F_JTAG_TDI
-	HF_M_PIN(5),	//HFGPIO_F_JTAG_TMS
-	HFM_NOPIN,		//HFGPIO_F_USBDP
-	HFM_NOPIN,		//HFGPIO_F_USBDM
-	HF_M_PIN(39),	//HFGPIO_F_UART0_TX
-	HF_M_PIN(40),	//HFGPIO_F_UART0_RTS
-	HF_M_PIN(41),	//HFGPIO_F_UART0_RX
-	HF_M_PIN(42),	//HFGPIO_F_UART0_CTS
-	
-	HF_M_PIN(27),	//HFGPIO_F_SPI_MISO
-	HF_M_PIN(28),	//HFGPIO_F_SPI_CLK
-	HF_M_PIN(29),	//HFGPIO_F_SPI_CS
-	HFM_NOPIN, //HF_M_PIN(30),	//HFGPIO_F_SPI_MOSI
-	
-	HFM_NOPIN,	//HFGPIO_F_UART1_TX,
-	HFM_NOPIN,	//HFGPIO_F_UART1_RTS,
-	HFM_NOPIN,	//HFGPIO_F_UART1_RX,
-	HFM_NOPIN,	//HFGPIO_F_UART1_CTS,
-	
-	HFM_NOPIN, //HF_M_PIN(43),	//HFGPIO_F_NLINK
-	HFM_NOPIN, //HF_M_PIN(44),	//HFGPIO_F_NREADY
-	HF_M_PIN(45),	//HFGPIO_F_NRELOAD
-	HF_M_PIN(7),	//HFGPIO_F_SLEEP_RQ
-	HF_M_PIN(8),	//HFGPIO_F_SLEEP_ON
-		
-	HF_M_PIN(15),		//HFGPIO_F_WPS
-	HFM_NOPIN,		//HFGPIO_F_RESERVE1
-	HFM_NOPIN,		//HFGPIO_F_RESERVE2
-	HFM_NOPIN,		//HFGPIO_F_RESERVE3
-	HFM_NOPIN,		//HFGPIO_F_RESERVE4
-	HFM_NOPIN,		//HFGPIO_F_RESERVE5
-	
-	HF_M_PIN(43),	// led
-	HF_M_PIN(44),	// relay
-	HF_M_PIN(30),	// switch/button
-};
-#else
-#error "Device not supported!"
-#endif
-
 
 static hftimer_handle_t debounce_timer, recovery_timer;
-static uint8_t key_counter;
+static volatile uint8_t key_counter = 0, recovery_counter = 0;
 
 inline int USER_FUNC gpio_get_state(int fid)
 {
@@ -161,7 +69,7 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 	}
 
 	ret = httpd_arg_find(url, "sw", val);
-	if (ret == 2)
+	if (ret != 1)
 		strcpy(val, "none");
 
 	sprintf(rsp, "<html><head><title>SWITCH STATE</title></head>" \
@@ -174,7 +82,7 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 	/* set relay */
 	if (strcmp(val, "1") == 0)
 		gpio_set_relay(1, 1);
-	else
+	else if (strcmp(val, "0") == 0)
 		gpio_set_relay(0, 1);
 }
 
@@ -191,43 +99,45 @@ static void USER_FUNC recovery_mode(void)
 
 static void USER_FUNC recovery_timer_handler(hftimer_handle_t timer)
 {
-	if (key_counter == 6) {
+	if (recovery_counter > 5) {
 		recovery_mode();
 	}
-	key_counter = 0;
+	recovery_counter = 0;
 }
 
 static void USER_FUNC debounce_timer_handler(hftimer_handle_t timer)
 {
 #if defined (__LPB100__)
 	if (gpio_get_state(GPIO_SWITCH) == 0) {
+		if (recovery_counter++ == 0) {
+			hftimer_start(recovery_timer);
+		}
 		hftimer_start(timer);
-} else
+	} else {
+		hftimer_stop(recovery_timer);
+		recovery_counter = 0;
+		key_counter = 0;
+	}
+#else 
+	key_counter = 0;
+	
+	if (recovery_counter++ == 0) {
+		hftimer_start(recovery_timer);
+	}
 #endif
-		hfgpio_fenable_interrupt(GPIO_SWITCH);
 }
 
 static void USER_FUNC switch_irqhandler(uint32_t arg1, uint32_t arg2)
 {
-	hfgpio_fdisable_interrupt(GPIO_SWITCH);
-	gpio_set_relay(2, 1);
+	if (key_counter == 0) {
+		key_counter++;
+		gpio_set_relay(2, 1);
+	}
 	hftimer_start(debounce_timer);
-
-	if (key_counter == 0)
-		hftimer_start(recovery_timer);
-
-	key_counter++;
 }
 
 void USER_FUNC gpio_init(void)
 {
-	/* init gpio */
-	if (hfgpio_fmap_check(module_type) != 0) {
-		HF_Debug(DEBUG_ERROR,"error: gpio map file error\n");
-		while(1)
-			msleep(1000);
-	}
-
 	hfgpio_configure_fpin(GPIO_RELAY, HFM_IO_OUTPUT_0);
 
 #if defined(__LPT100F__)
@@ -244,8 +154,7 @@ void USER_FUNC gpio_init(void)
 #endif
 
 	debounce_timer = hftimer_create("debouncer", 200, false, HFTIMER_ID_DEBOUNCE, debounce_timer_handler, 0);
-	recovery_timer = hftimer_create("recovery", 2000, false, HFTIMER_ID_DEBOUNCE, recovery_timer_handler, 0);
-	hftimer_start(recovery_timer);
+	recovery_timer = hftimer_create("recovery", 3000, false, HFTIMER_ID_RECOVERY, recovery_timer_handler, 0);
 
 	httpd_add_page("/state", switch_state_page);
 }
