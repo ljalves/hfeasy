@@ -214,7 +214,6 @@ void USER_FUNC mqttcli_initcfg(void)
 void USER_FUNC mqttcli_init(void)
 {
 	struct hfeasy_state *state = config_get_state();
-	struct hfeasy_config *cfg = &state->cfg;
 	
 	/* start mqtt thread */
 	if (hfthread_create((PHFTHREAD_START_ROUTINE) mqttcli_thread,

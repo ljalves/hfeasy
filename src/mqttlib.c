@@ -76,11 +76,11 @@ enum MQTTErrors mqtt_sync(struct mqtt_client *client) {
     }
 
     /* Call receive */
-    err = __mqtt_recv(client);
+    err = (enum MQTTErrors) __mqtt_recv(client);
     if (err != MQTT_OK) return err;
 
     /* Call send */
-    err = __mqtt_send(client);
+    err = (enum MQTTErrors) __mqtt_send(client);
     return err;
 }
 
@@ -204,20 +204,20 @@ void mqtt_reinit(struct mqtt_client* client,
 #define MQTT_CLIENT_TRY_PACK(tmp, msg, client, pack_call, release)  \
     if (client->error < 0) {                                        \
         if (release) MQTT_PAL_MUTEX_UNLOCK(&client->mutex);         \
-        return client->error;                                       \
+        return (enum MQTTErrors) client->error;                                       \
     }                                                               \
     tmp = pack_call;                                                \
     if (tmp < 0) {                                                  \
-        client->error = tmp;                                        \
+        client->error = (enum MQTTErrors) tmp;                                        \
         if (release) MQTT_PAL_MUTEX_UNLOCK(&client->mutex);         \
-        return tmp;                                                 \
+        return (enum MQTTErrors) tmp;                                                 \
     } else if (tmp == 0) {                                          \
         mqtt_mq_clean(&client->mq);                                 \
         tmp = pack_call;                                            \
         if (tmp < 0) {                                              \
-            client->error = tmp;                                    \
+            client->error = (enum MQTTErrors) tmp;                                    \
             if (release) MQTT_PAL_MUTEX_UNLOCK(&client->mutex);     \
-            return tmp;                                             \
+            return (enum MQTTErrors) tmp;                                             \
         } else if(tmp == 0) {                                       \
             client->error = MQTT_ERROR_SEND_BUFFER_IS_FULL;         \
             if (release) MQTT_PAL_MUTEX_UNLOCK(&client->mutex);     \
@@ -534,7 +534,7 @@ ssize_t __mqtt_send(struct mqtt_client *client)
         /* we're sending the message */
         ssize_t tmp = mqtt_pal_sendall(client->socketfd, (char*) msg->start, msg->size, 0);
         if (tmp < 0) {
-            client->error = tmp;
+            client->error = (enum MQTTErrors) tmp;
             MQTT_PAL_MUTEX_UNLOCK(&client->mutex);
             return tmp;
         }
@@ -599,7 +599,7 @@ ssize_t __mqtt_send(struct mqtt_client *client)
     if (MQTT_PAL_TIME() > keep_alive_timeout) {
         ssize_t rv = __mqtt_ping(client);
         if (rv != MQTT_OK) {
-            client->error = rv;
+            client->error = (enum MQTTErrors) rv;
             MQTT_PAL_MUTEX_UNLOCK(&client->mutex);
             return rv;
         }
@@ -622,7 +622,7 @@ int __mqtt_recv(struct mqtt_client *client)
         rv = mqtt_pal_recvall(client->socketfd, (char*) client->recv_buffer.curr, client->recv_buffer.curr_sz, 0);
         if (rv < 0) {
             /* an error occurred */
-            client->error = rv;
+            client->error = (enum MQTTErrors) rv;
             MQTT_PAL_MUTEX_UNLOCK(&client->mutex);
             return rv;
         } else {
@@ -634,7 +634,7 @@ int __mqtt_recv(struct mqtt_client *client)
         consumed = mqtt_unpack_response(&response, client->recv_buffer.mem_start, client->recv_buffer.curr - client->recv_buffer.mem_start);
 
         if (consumed < 0) {
-            client->error = consumed;
+            client->error = (enum MQTTErrors) consumed;
             MQTT_PAL_MUTEX_UNLOCK(&client->mutex);
             return consumed;
         } else if (consumed == 0) {
@@ -705,7 +705,7 @@ int __mqtt_recv(struct mqtt_client *client)
                 if (response.decoded.publish.qos_level == 1) {
                     rv = __mqtt_puback(client, response.decoded.publish.packet_id);
                     if (rv != MQTT_OK) {
-                        client->error = rv;
+                        client->error = (enum MQTTErrors) rv;
                         MQTT_PAL_MUTEX_UNLOCK(&client->mutex);
                         return rv;
                     }
@@ -717,7 +717,7 @@ int __mqtt_recv(struct mqtt_client *client)
 
                     rv = __mqtt_pubrec(client, response.decoded.publish.packet_id);
                     if (rv != MQTT_OK) {
-                        client->error = rv;
+                        client->error = (enum MQTTErrors) rv;
                         MQTT_PAL_MUTEX_UNLOCK(&client->mutex);
                         return rv;
                     }
@@ -755,7 +755,7 @@ int __mqtt_recv(struct mqtt_client *client)
                 /* stage PUBREL */
                 rv = __mqtt_pubrel(client, response.decoded.pubrec.packet_id);
                 if (rv != MQTT_OK) {
-                    client->error = rv;
+                    client->error = (enum MQTTErrors) rv;
                     MQTT_PAL_MUTEX_UNLOCK(&client->mutex);
                     return rv;
                 }
@@ -774,7 +774,7 @@ int __mqtt_recv(struct mqtt_client *client)
                 /* stage PUBCOMP */
                 rv = __mqtt_pubcomp(client, response.decoded.pubrec.packet_id);
                 if (rv != MQTT_OK) {
-                    client->error = rv;
+                    client->error = (enum MQTTErrors) rv;
                     MQTT_PAL_MUTEX_UNLOCK(&client->mutex);
                     return rv;
                 }
@@ -849,8 +849,8 @@ int __mqtt_recv(struct mqtt_client *client)
     }
 
     /* never hit (always return once there's nothing left. */
-    MQTT_PAL_MUTEX_UNLOCK(&client->mutex);
-    return MQTT_OK;
+    //MQTT_PAL_MUTEX_UNLOCK(&client->mutex);
+    //return MQTT_OK;
 }
 
 /* FIXED HEADER */
@@ -959,7 +959,7 @@ ssize_t mqtt_unpack_fixed_header(struct mqtt_response *response, const uint8_t *
     if (bufsz == 0) return 0;
 
     /* parse control type and flags */
-    fixed_header->control_type  = *buf >> 4;
+    fixed_header->control_type  = (enum MQTTControlPacketType) *buf >> 4;
     fixed_header->control_flags = *buf & 0x0F;
 
     /* parse remaining size */
