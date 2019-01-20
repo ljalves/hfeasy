@@ -145,6 +145,10 @@ static void* USER_FUNC mqttcli_thread(void* client)
 						} else {
 							STATE = 3;
 							state->mqtt_ready = 1;
+							if (strlen(state->cfg.mqtt_sub_topic) > 0) {
+								u_printf("mqtt subscribe to '%s'\r\n", state->cfg.mqtt_sub_topic);
+								mqtt_subscribe(&mqttcli, state->cfg.mqtt_sub_topic, 0);
+							}
 						}
 					} else {
 						msleep(1000);
@@ -217,16 +221,6 @@ void USER_FUNC mqttcli_init(void)
 					"mqttcli", 256, &mqttcli, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS) {
 		u_printf("mqtt sync thread create failed!\n");
 	}
-
-	u_printf("waiting for mqtt connection.");
-	while (state->mqtt_ready == 0) {
-		u_printf(".");
-		msleep(1000);
-	}
-	u_printf("\r\nready\r\n");
-	
-	u_printf("mqtt subscribe to '%s'\r\n", cfg->mqtt_sub_topic);
-	mqtt_subscribe(&mqttcli, cfg->mqtt_sub_topic, 0);
 
 	return;
 }
