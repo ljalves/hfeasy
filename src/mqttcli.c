@@ -1,3 +1,25 @@
+/* HFeasy
+
+Copyright (c) 2019 Luis Alves
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
 
 #include "hfeasy.h"
 #include "mqttlib.h"
@@ -9,6 +31,18 @@
 #define MQTT_SYNC_DELAY		200 /* ms */
 #define MQTT_PING_PERIOD	30  /* sec */
 #define MQTT_PING_COUNT		(MQTT_PING_PERIOD * (1000 / MQTT_SYNC_DELAY))
+
+
+enum {
+	MQTTCLI_STATE_IDLE = 0,
+	MQTTCLI_STATE_INIT,
+	MQTTCLI_STATE_CONNECT,
+	MQTTCLI_STATE_RUN,
+	MQTTCLI_STATE_DISCONNECT,
+	MQTTCLI_STATE_FREERX,
+	MQTTCLI_STATE_FREETX,
+	MQTTCLI_STATE_RESET
+};
 
 static struct mqtt_client mqttcli;
 
@@ -106,30 +140,30 @@ static void* USER_FUNC mqttcli_thread(void* client)
 	while(1) {
 		//u_printf("mqttcli_thread STATE=%d\r\n", STATE);
 		switch(STATE) {
-			case 0:
+			case MQTTCLI_STATE_IDLE:
 			default:
 				/* disconnected */
 				if (state->has_ip && (state->cfg.mqtt_server_port != 0))
-					STATE = 1;
+					STATE = MQTTCLI_STATE_INIT;
 				msleep(1000);
 				break;
 				
-			case 1:
-				STATE = 2;
+			case MQTTCLI_STATE_INIT:
+				STATE = MQTTCLI_STATE_CONNECT;
 				/* alloc rx/tx buffers */
 				txbuf = hfmem_malloc(MQTT_TX_BUF_SIZE);
 				if (txbuf == NULL) {
 					u_printf("failed to alloc tx buf mem\r\n");
-					STATE = 52;
+					STATE = MQTTCLI_STATE_RESET;
 				}
 				rxbuf = hfmem_malloc(MQTT_RX_BUF_SIZE);
 				if (rxbuf == NULL) {
 					u_printf("failed to alloc rx buf mem\r\n");
-					STATE = 51;
+					STATE = MQTTCLI_STATE_FREETX;
 				}
 				break;
 				
-			case 2:
+			case MQTTCLI_STATE_CONNECT:
 				/* connect to server */
 				{
 					int fd = mqttcli_connect();
@@ -141,9 +175,9 @@ static void* USER_FUNC mqttcli_thread(void* client)
 						mqtt_connect(client, state->mac_addr_s, NULL, NULL, 0, user, pass, 0, 400);
 						if (c->error != MQTT_OK) {
 							u_printf("error: %s\n", mqtt_error_str(c->error));
-							STATE = 49;
+							STATE = MQTTCLI_STATE_DISCONNECT;
 						} else {
-							STATE = 3;
+							STATE = MQTTCLI_STATE_RUN;
 							state->mqtt_ready = 1;
 							if (strlen(state->cfg.mqtt_sub_topic) > 0) {
 								u_printf("mqtt subscribe to '%s'\r\n", state->cfg.mqtt_sub_topic);
@@ -156,34 +190,36 @@ static void* USER_FUNC mqttcli_thread(void* client)
 				}
 				break;
 				
-			case 3:
+			case MQTTCLI_STATE_RUN:
 				/* running state */
 				{
-					if (state->mqtt_ready == 2)
+					if (state->mqtt_ready == 0) {
+						/* disconnect */
 						gpio_set_led(0);
-						
-					if (++state->mqtt_ready == MQTT_PING_COUNT) {
+						STATE = MQTTCLI_STATE_DISCONNECT;
+					} else if (state->mqtt_ready == 2) {
+						gpio_set_led(0);
+					} else if (++state->mqtt_ready == MQTT_PING_COUNT) {
 						state->mqtt_ready = 1;
 						mqtt_ping(&mqttcli);
 						gpio_set_led(1);
-						//u_printf("mqtt ping\r\n");
 					}
 					
 					if (mqtt_sync(c) != MQTT_OK) {
 						u_printf("mqtt thread sync error: %s\r\n", mqtt_error_str(c->error));
-						STATE = 49;
+						STATE = MQTTCLI_STATE_DISCONNECT;
 					}
 					msleep(MQTT_SYNC_DELAY);
 				}
 				break;
 			
-			case 49:
+			case MQTTCLI_STATE_DISCONNECT:
 				close(c->socketfd);
-			case 50:
+			case MQTTCLI_STATE_FREETX:
 				hfmem_free(txbuf);
-			case 51:
+			case MQTTCLI_STATE_FREERX:
 				hfmem_free(rxbuf);
-			case 52:
+			case MQTTCLI_STATE_RESET:
 				state->mqtt_ready = 0;
 				STATE = 0;
 				msleep(1000);
