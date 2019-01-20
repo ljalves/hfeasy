@@ -11,8 +11,7 @@ static hftimer_handle_t reset_timer, led_timer;
 
 static void USER_FUNC reboot_timer_handler(hftimer_handle_t timer)
 {
-	char rsp[50];
-	hfat_send_cmd("AT+Z\r\n", sizeof("AT+Z\r\n"), rsp, 64);
+	hfsys_reset();
 }
 
 void USER_FUNC reboot(void)
@@ -104,18 +103,54 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 	u_printf("page_size=%d\r\n", strlen(rsp));
 }
 
+static void get_reset_reason(uint32_t r, char *s)
+{
+	s[0] = '\0';
+	
+	if (r == HFSYS_RESET_REASON_NORMAL) { // power off restart
+		strcat(s, "normal startup");
+		return;
+	}
+	if (r & HFSYS_RESET_REASON_ERESET) // hardware restart
+		strcat(s, "reset pin,");
+	if (r & HFSYS_RESET_REASON_IRESET0) // soft restart softreset
+		strcat(s, "softreset,");
+	if (r & HFSYS_RESET_REASON_IRESET1) // call hfsys_reset
+		strcat(s, "hfsys_reset,");
+	if (r & HFSYS_RESET_REASON_WPS) // WPS restart
+		strcat(s, "wps restart,");
+	if (r & HFSYS_RESET_REASON_WPS_OK) // wps success
+		strcat(s, "wps success,");
+	if (r & HFSYS_RESET_REASON_SMARTLINK_START) // turn on smartLink
+		strcat(s, "smartlink restart,");
+	if (r & HFSYS_RESET_REASON_SMARTLINK_OK) // smartlink success
+		strcat(s, "smartlink ok,");
+	if (strlen(s) == 0)
+		strcat(s, "unknown,");
+	s[strlen(s) - 1] = '\0';
+	return;
+}
+
 static const char *status_page =
 	"<!DOCTYPE html><html><head><title>HFeasy status v%d.%d</title></head><body>"\
 	"<h1>HF Easy module status</h1><hr>"\
+	"<h2>System</h2><br>"\
+	"Reset flags: %08x, reason: %s<br>Free memory: %u bytes<br>"\
+	"<hr>"\
 	"<h2>GPIO status</h2><br>"\
-	"Switch: %s<br>Relay: %s<br><hr>"
+	"Switch: %s<br>Relay: %s<br>"\
+	"<hr>"\
 	"<h2>Connectivity</h2>"\
 	"MQTT server: %s"\
   "</body></html>";
 
 static void USER_FUNC httpd_page_status(char *url, char *rsp)
 {
+	char rr[100];
+	get_reset_reason(state.reset_reason, rr);
+	
 	sprintf(rsp, status_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
+					state.reset_reason, rr, hfsys_get_memory(),
 					state.relay_state ? "Closed" : "Open",
 					gpio_get_state(GPIO_SWITCH) ? "High" : "Low",
 					state.mqtt_ready ? "Connected" : "Disconnected");
@@ -228,6 +263,8 @@ static void USER_FUNC config_load(uint8_t reset)
 void USER_FUNC config_init(void)
 {
 	config_load(0);
+	
+	state.reset_reason = hfsys_get_reset_reason();
 	
 	if(hfsys_register_system_event((hfsys_event_callback_t) hfsys_event_callback) != HF_SUCCESS)
 		HF_Debug(DEBUG_ERROR,"error registering system event callback\r\n");

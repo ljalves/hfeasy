@@ -22,6 +22,7 @@ struct hfeasy_config {
 struct hfeasy_state {
 	uint8_t has_ip;
 	uint8_t mqtt_ready;
+	uint32_t reset_reason;
 	
 	uint8_t	relay_state;
 	
