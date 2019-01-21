@@ -1,7 +1,29 @@
+/* HFeasy
+
+Copyright (c) 2019 Luis Alves
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
 
 #include "hfeasy.h"
 
-#define CONFIG_MAGIC_VER1  0xa2
+#define CONFIG_MAGIC_VER1  0xa3
 #define CONFIG_OFFSET      0x00
 #define CONFIG_SIZE        (sizeof(struct hfeasy_config))
 
@@ -35,24 +57,25 @@ static void USER_FUNC led_timer_handler(hftimer_handle_t timer)
 
 static const char *config_page =
 	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title></head><body>"\
-	"<h1>HFeasy config page</h1>"\
+	"<h1>HFeasy config page</h1><hr>"\
+	"<h2>MQTT client</h2><br>"\
 	"<form action=\"/config\" method=\"GET\">"\
-	"MQTT server IP: <input type=\"text\" name=\"mqtt_hostname\" value=\"%s\"><br>"\
-	"MQTT server port (0=disabled): <input type=\"text\" name=\"mqtt_port\" value=\"%d\"><br>"\
-	"MQTT server username: <input type=\"text\" name=\"mqtt_user\" value=\"%s\"><br>"\
-	"MQTT server password: <input type=\"password\" name=\"mqtt_pass\" value=\"%s\"><br>"\
+	"Server IP: <input type=\"text\" name=\"mqtt_hostname\" value=\"%s\"><br>"\
+	"Server port (0=disabled): <input type=\"text\" name=\"mqtt_port\" value=\"%d\"><br>"\
+	"Username: <input type=\"text\" name=\"mqtt_user\" value=\"%s\"><br>"\
+	"Password: <input type=\"password\" name=\"mqtt_pass\" value=\"%s\"><br>"\
 	"Subscribe topic: <input type=\"text\" name=\"mqtt_sub_topic\" value=\"%s\"><br>"\
 	"Publish topic: <input type=\"text\" name=\"mqtt_pub_topic\" value=\"%s\"><br>"\
+	"QOS: <input type=\"text\" name=\"mqtt_qos\" value=\"%d\"><br>"\
 	"ON value: <input type=\"text\" name=\"mqtt_on_value\" value=\"%s\"><br>"\
 	"OFF value: <input type=\"text\" name=\"mqtt_off_value\" value=\"%s\"><br>"\
-	"<input type=\"submit\" value=\"Update\">"\
+	"<input type=\"submit\" value=\"Commit values\">"\
 	"</form>"\
 	"<hr><form action=\"/config\" method=\"GET\"><input type=\"submit\" value=\"Save and reboot\" name=\"save\"></form>"\
 	"</body></html>";
 
 static void USER_FUNC httpd_page_config(char *url, char *rsp)
 {
-	//char mqtt_ip[20];
 	char tmp[50];
 	int ret;
 	
@@ -75,10 +98,14 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 	ret = httpd_arg_find(url, "mqtt_sub_topic", tmp);
 	if (ret > 0)
 		strcpy(state.cfg.mqtt_sub_topic, tmp);
-	
+		
 	ret = httpd_arg_find(url, "mqtt_pub_topic", tmp);
 	if (ret > 0)
 		strcpy(state.cfg.mqtt_pub_topic, tmp);
+
+	ret = httpd_arg_find(url, "mqtt_qos", tmp);
+	if (ret > 0)
+		state.cfg.mqtt_qos = atoi(tmp);
 	
 	ret = httpd_arg_find(url, "mqtt_on_value", tmp);
 	if (ret > 0)
@@ -97,7 +124,7 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 	sprintf(rsp, config_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
 					state.cfg.mqtt_server_hostname, state.cfg.mqtt_server_port,
 					state.cfg.mqtt_server_user, state.cfg.mqtt_server_pass,
-					state.cfg.mqtt_sub_topic, state.cfg.mqtt_pub_topic,
+					state.cfg.mqtt_sub_topic, state.cfg.mqtt_pub_topic, state.cfg.mqtt_qos,
 					state.cfg.mqtt_on_value, state.cfg.mqtt_off_value);
 
 	u_printf("page_size=%d\r\n", strlen(rsp));

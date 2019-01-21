@@ -55,8 +55,8 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 	struct hfeasy_state *state = config_get_state();
 	struct hfeasy_config *cfg = &state->cfg;
 
-	char* topic_name = (char*) hfmem_malloc(published->topic_name_size + 1);
-	char* msg = (char*) hfmem_malloc(published->application_message_size + 1);
+	char *topic_name = (char*) hfmem_malloc(published->topic_name_size + 1);
+	char *msg = (char*) hfmem_malloc(published->application_message_size + 1);
 	
 	memcpy(topic_name, published->topic_name, published->topic_name_size);
 	topic_name[published->topic_name_size] = '\0';
@@ -64,7 +64,6 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 	msg[published->application_message_size] = '\0';
 	u_printf("Received publish('%s'): %s\n", topic_name, msg);
 	
-
 	if (strcmp(topic_name, cfg->mqtt_sub_topic) == 0) {
 		if (strcmp(cfg->mqtt_on_value, msg) == 0) {
 			if (state->relay_state != 1)
@@ -74,7 +73,6 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 				gpio_set_relay(0, 0);
 		}
 	}
-	
 	hfmem_free(topic_name);
 	hfmem_free(msg);
 }
@@ -181,7 +179,7 @@ static void* USER_FUNC mqttcli_thread(void* client)
 							state->mqtt_ready = 1;
 							if (strlen(state->cfg.mqtt_sub_topic) > 0) {
 								u_printf("mqtt subscribe to '%s'\r\n", state->cfg.mqtt_sub_topic);
-								mqtt_subscribe(&mqttcli, state->cfg.mqtt_sub_topic, 0);
+								mqtt_subscribe(&mqttcli, state->cfg.mqtt_sub_topic, state->cfg.mqtt_qos);
 							}
 						}
 					} else {
@@ -231,8 +229,21 @@ static void* USER_FUNC mqttcli_thread(void* client)
 void USER_FUNC mqttcli_publish(char *value)
 {
 	struct hfeasy_state *state = config_get_state();
+	uint8_t flags;
+	switch (state->cfg.mqtt_qos) {
+		default:
+		case 0:
+			flags = MQTT_PUBLISH_QOS_0;
+			break;
+		case 1:
+			flags = MQTT_PUBLISH_QOS_1;
+			break;
+		case 2:
+			flags = MQTT_PUBLISH_QOS_2;
+			break;
+	}
 	if (state->mqtt_ready)
-		mqtt_publish(&mqttcli, state->cfg.mqtt_pub_topic, value, strlen(value) , MQTT_PUBLISH_QOS_0);
+		mqtt_publish(&mqttcli, state->cfg.mqtt_pub_topic, value, strlen(value), flags);
 }
 
 
