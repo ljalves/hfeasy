@@ -129,7 +129,7 @@ int USER_FUNC mqttcli_connect(void)
 }
 
 
-static void* USER_FUNC mqttcli_thread(void* client)
+static void USER_FUNC mqttcli_thread(void* client)
 {
 	struct hfeasy_state *state = config_get_state();
 	struct mqtt_client *c = (struct mqtt_client*) client;

@@ -180,19 +180,58 @@ static const char *status_page =
 	"<h2>GPIO status</h2><br>"\
 	"Switch: %s<br>Relay: %s<br>"\
 	"<hr>"\
+	"<h2>Timer status</h2><br>"\
+	"Countdown (turn OFF): %s<br>"\
+	"Countdown (turn ON): %s<br>"\
+	"<hr>"\
 	"<h2>Connectivity</h2>"\
 	"MQTT server: %s"\
   "</body></html>";
 
 static void USER_FUNC httpd_page_status(char *url, char *rsp)
 {
+	char cd_off[25], cd_on[25];
 	char rr[100];
+	uint32_t i, h, m, s;
 	get_reset_reason(state.reset_reason, rr);
+	
+	if (state.cfg.countdown[0] != 0) {
+		if (state.countdown[0] == 0) {
+			sprintf(cd_off, "waiting for ON state");
+		} else {
+			i = state.countdown[0] - (hfsys_get_time() / 1000);
+			s = i % 60;
+			i /= 60;
+			m = i % 60;
+			i /= 60;
+			h = i;
+			sprintf(cd_off, "%dh%dm%ds", h, m, s);
+		}
+	} else {
+		sprintf(cd_off, "disabled");
+	}
+	
+	if (state.cfg.countdown[1] != 0) {
+		if (state.countdown[1] == 0) {
+			sprintf(cd_on, "waiting for OFF state");
+		} else {
+			i = state.countdown[1] - (hfsys_get_time() / 1000);
+			s = i % 60;
+			i /= 60;
+			m = i % 60;
+			i /= 60;
+			h = i;
+			sprintf(cd_on, "%dh%dm%ds", h, m, s);
+		}
+	} else {
+		sprintf(cd_on, "disabled");
+	}
 	
 	sprintf(rsp, status_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
 					state.reset_reason, rr, hfsys_get_memory(),
-					state.relay_state ? "Closed" : "Open",
 					gpio_get_state(GPIO_SWITCH) ? "High" : "Low",
+					state.relay_state ? "Closed(On)" : "Open(Off)",
+					cd_off, cd_on,
 					state.mqtt_ready ? "Connected" : "Disconnected");
 }
 

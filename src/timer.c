@@ -29,12 +29,12 @@ static const char *timer_page =
 	"<h1>HFeasy timers</h1><hr>"\
 	"<h2>Countdown timer</h2><br>"\
 	"<form action=\"/timer\" method=\"GET\">"\
-	"Turn OFF (0 to disable): <input type=\"text\" name=\"cd0_h\" value=\"%d\" maxlength=\"4\" size=\"4\">:"\
-		"<input type=\"text\" name=\"cd0_m\" value=\"%d\" maxlength=\"2\" size=\"2\">:"\
-		"<input type=\"text\" name=\"cd0_s\" value=\"%d\" maxlength=\"2\" size=\"2\"><br>"\
-	"Turn ON (0 to disable): <input type=\"text\" name=\"cd1_h\" value=\"%d\" maxlength=\"4\" size=\"4\">:"\
-		"<input type=\"text\" name=\"cd1_m\" value=\"%d\" maxlength=\"2\" size=\"2\">:"\
-		"<input type=\"text\" name=\"cd1_s\" value=\"%d\" maxlength=\"2\" size=\"2\"><br>"\
+	"Turn OFF (0 to disable): <input type=\"text\" name=\"cd0_h\" value=\"%d\" maxlength=\"4\" size=\"4\">h"\
+		"<input type=\"text\" name=\"cd0_m\" value=\"%d\" maxlength=\"2\" size=\"2\">m"\
+		"<input type=\"text\" name=\"cd0_s\" value=\"%d\" maxlength=\"2\" size=\"2\">s<br>"\
+	"Turn ON (0 to disable): <input type=\"text\" name=\"cd1_h\" value=\"%d\" maxlength=\"4\" size=\"4\">h"\
+		"<input type=\"text\" name=\"cd1_m\" value=\"%d\" maxlength=\"2\" size=\"2\">m"\
+		"<input type=\"text\" name=\"cd1_s\" value=\"%d\" maxlength=\"2\" size=\"2\">s<br>"\
 	"<input type=\"submit\" value=\"Apply\"></form>"\
 	"<hr><form action=\"/timer\" method=\"GET\"><input type=\"submit\" value=\"Save to flash\" name=\"save\"></form>"\
 	"</body></html>";
@@ -136,7 +136,7 @@ static void USER_FUNC httpd_page_timer(char *url, char *rsp)
 }	
 
 
-static void* USER_FUNC timer_thread(void *opaque)
+static void USER_FUNC timer_thread(void *opaque)
 {
 	struct hfeasy_state *state = (struct hfeasy_state *) opaque;
 	uint32_t now;
