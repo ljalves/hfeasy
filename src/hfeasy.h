@@ -13,10 +13,11 @@
 #include "httpd.h"
 #include "mqttcli.h"
 #include "buzzer.h"
+#include "timer.h"
 
 
 #define HFEASY_VERSION_MAJOR	0
-#define HFEASY_VERSION_MINOR	2
+#define HFEASY_VERSION_MINOR	3
 
 
 enum {

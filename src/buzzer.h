@@ -1,6 +1,3 @@
-#ifndef _BUZZER_H_
-#define _BUZZER_H_
-
 /* HFeasy
 
 Copyright (c) 2019 Luis Alves
@@ -23,6 +20,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+
+#ifndef _BUZZER_H_
+#define _BUZZER_H_
 
 #include "hfeasy.h"
 

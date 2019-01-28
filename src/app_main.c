@@ -56,6 +56,7 @@ int USER_FUNC app_main(void)
 	httpd_init();
 	gpio_init();
 	buzzer_init();
+	timer_init();
 	mqttcli_init();
 		
 	return 1;
