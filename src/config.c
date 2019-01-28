@@ -30,6 +30,7 @@ SOFTWARE.
 struct hfeasy_state state;
 static hftimer_handle_t reset_timer, led_timer;
 
+void USER_FUNC get_module_name(char *buf);
 
 static void USER_FUNC reboot_timer_handler(hftimer_handle_t timer)
 {
@@ -58,6 +59,10 @@ static void USER_FUNC led_timer_handler(hftimer_handle_t timer)
 static const char *config_page =
 	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title></head><body>"\
 	"<h1>HFeasy config page</h1><hr>"\
+	"<h2>Module</h2><br>"\
+	"<form action=\"/config\" method=\"GET\">"\
+	"Module name: <input type=\"text\" name=\"module_name\" value=\"%s\"><br>"\
+	"<input type=\"submit\" value=\"Commit\"></form>"\
 	"<h2>MQTT client</h2><br>"\
 	"<form action=\"/config\" method=\"GET\">"\
 	"Server IP: <input type=\"text\" name=\"mqtt_hostname\" value=\"%s\"><br>"\
@@ -69,8 +74,7 @@ static const char *config_page =
 	"QOS: <input type=\"text\" name=\"mqtt_qos\" value=\"%d\"><br>"\
 	"ON value: <input type=\"text\" name=\"mqtt_on_value\" value=\"%s\"><br>"\
 	"OFF value: <input type=\"text\" name=\"mqtt_off_value\" value=\"%s\"><br>"\
-	"<input type=\"submit\" value=\"Commit values\">"\
-	"</form>"\
+	"<input type=\"submit\" value=\"Commit values\"></form>"\
 	"<hr><form action=\"/config\" method=\"GET\"><input type=\"submit\" value=\"Save and reboot\" name=\"save\"></form>"\
 	"</body></html>";
 
@@ -115,6 +119,14 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 	if (ret > 0)
 		strcpy(state.cfg.mqtt_off_value, tmp);
 
+	
+	ret = httpd_arg_find(url, "module_name", tmp);
+	if (ret > 0) {
+		strcpy(state.cfg.module_name, tmp);
+	} else if (state.cfg.module_name[0] == '\0') {
+			get_module_name(state.cfg.module_name);
+	}
+	
 	ret = httpd_arg_find(url, "save", tmp);
 	if (ret > 0) {
 		config_save();
@@ -122,6 +134,7 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 	}
 	
 	sprintf(rsp, config_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
+					state.cfg.module_name,
 					state.cfg.mqtt_server_hostname, state.cfg.mqtt_server_port,
 					state.cfg.mqtt_server_user, state.cfg.mqtt_server_pass,
 					state.cfg.mqtt_sub_topic, state.cfg.mqtt_pub_topic, state.cfg.mqtt_qos,
@@ -267,6 +280,46 @@ void USER_FUNC config_save(void)
 	u_printf("saving config to flash. size=%d\r\n", CONFIG_SIZE);
 }
 
+
+void USER_FUNC get_module_name(char *buf)
+{
+	char *words[3] = {NULL};
+	char rsp[64] = {0};
+
+	hfat_send_cmd("AT+MID\r\n", sizeof("AT+MID\r\n"), rsp, 64);
+	if (hfat_get_words(rsp, words, 2) > 0) {
+		if ((rsp[0]=='+') && (rsp[1]=='o') && (rsp[2]=='k')) {
+			u_printf("module name = %s\n", words[1]);
+			strcpy(buf, words[1]);
+			return;
+		}
+	}
+	strcpy(buf, "LPx100");
+}
+
+int USER_FUNC set_module_name(void)
+{
+	//char *words[3] = {NULL};
+	char rsp[64] = {0};
+	char tmp[50];
+
+	/* module name not setup */
+	if (strlen(state.cfg.module_name) == 0)
+		return 3;
+	
+	get_module_name(tmp);
+	/* module name already set */
+	if (strcmp(tmp, state.cfg.module_name) == 0)
+		return 2;
+	
+	sprintf(tmp, "AT+WRMID=%s\r\n", state.cfg.module_name);
+	hfat_send_cmd(tmp, strlen(tmp) + 1, rsp, 64);
+	if //((hfat_get_words(rsp, words, 1) > 0) && 
+			((rsp[0]=='+') && (rsp[1]=='o') && (rsp[2]=='k'))
+			return 1;
+	return 0;
+}
+
 static void USER_FUNC config_load(uint8_t reset)
 {
 	memset(&state, 0, sizeof(struct hfeasy_state));
@@ -285,6 +338,7 @@ static void USER_FUNC config_load(uint8_t reset)
 		config_save();
 	}
 	
+	set_module_name();
 }
 
 void USER_FUNC config_init(void)

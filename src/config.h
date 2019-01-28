@@ -41,6 +41,8 @@ struct hfeasy_config {
 	char      mqtt_on_value[10];
 	char      mqtt_off_value[10];
 	
+	/* module */
+	char      module_name[30];
 };
 
 struct hfeasy_state {
@@ -52,6 +54,8 @@ struct hfeasy_state {
 	
 	char mac_addr[6];
 	char mac_addr_s[6*2+1];
+	
+	time_t	countdown[2];
 	
 	struct hfeasy_config cfg;
 };
