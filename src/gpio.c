@@ -142,15 +142,15 @@ void USER_FUNC gpio_set_relay(uint8_t action, uint8_t publish)
 	
 	switch(action) {
 		default:
-		case 0:
+		case RELAY_OFF:
 			/* off */
 			state->relay_state = 0;
 			break;
-		case 1:
+		case RELAY_ON:
 			/* on */
 			state->relay_state = 1;
 			break;
-		case 2:
+		case RELAY_TOGGLE:
 			/* toggle */
 			state->relay_state ^= 1;
 			break;
@@ -171,6 +171,7 @@ void USER_FUNC gpio_set_relay(uint8_t action, uint8_t publish)
 
 static void USER_FUNC switch_state_page(char *url, char *rsp)
 {
+	struct hfeasy_state *state = config_get_state();
 	char val[20];
 	int ret;
 
@@ -183,13 +184,13 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 	ret = httpd_arg_find(url, "sw", val);
 	if (ret != 1)
 		strcpy(val, "none");
-
+	
 	sprintf(rsp, "<html><head><title>SWITCH STATE</title></head>" \
 							 "<body>SWITCH STATE WEB PAGE<br>" \
-							 "ret=%d, sw='%s'" \
-							 "</body></html>", ret, val);
+							 "ret=%d, sw='%s' relay_state=%d" \
+							 "</body></html>", ret, val, state->relay_state);
 
-	u_printf("ret=%d, sw='%s', page '%s' served\r\n", ret, val, url);	
+	//u_printf("ret=%d, sw='%s' relay_state=%d\r\n", ret, val, state->relay_state);
 
 	/* set relay */
 	if (strcmp(val, "1") == 0)
