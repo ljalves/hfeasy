@@ -16,6 +16,13 @@ After flashing hfeasy, you'll have access to the following web pages:
   * status: http://\<deviceip\>/state
   * on: http://\<deviceip\>/state?sw=1
   * off: http://\<deviceip\>/state?sw=0
+* Timers:
+  * http://\<deviceip\>/timer
+
+# Recovery mode
+  * The device will reset config options and change to AP mode so that you can re-configure it.
+    * Module: Toggle the switch 6 or more times within 3 sec
+    * Plug: Press and hold the switch for more than 3 sec
 
 # Supported devices (so far...)
 * Wifi Plug (http://www.lumitek.cn/en/productsd.php?pid=1095)
@@ -27,18 +34,23 @@ After flashing hfeasy, you'll have access to the following web pages:
 
 # Firmware
 * [Download here](https://drive.google.com/open?id=1HWl-QiYM2u8lW9TAv1M6Kr9DPkj1_wRG)
+* hfeasy 0v3
+  * Changes:
+    * Added MQTT QoS setting
+    * Added module hostname setting
+    * Added on/off countdown timers (http://\<ip\>/timer)
 * hfeasy 0v2
   * Changes:
     * Added MQTT authentication
     * Added recovery mode for both devices: press the switch 6 times withing 2 sec and the device enters AP mode and resets config
-    * Added buzzer driver. Right now just for fun, try: http://\<ip\>/state?tone=3 (dont go > 21)
+    * Added buzzer driver (for on/off module only). Right now just for fun, try: http://\<ip\>/state?tone=3 (dont go > 21)
 * haeasy 0v1
   * Initial release
 
 * Original firmware (in case you want to go back):
   * [Plug](http://lumitek.yunext.com/files/DF_1_5114.bin)
   * [Module](http://lumitek.yunext.com/files/D1_1_V1.5116.bin)
-
+  * Also available on the gdrive folder + factory webpage .bin
 
 # Device info
 All devices have a firmware flash webpage at: http://\<deviceip\>/iweb.html
@@ -54,6 +66,5 @@ The user/pass defaults to admin/admin.
 If you upgrade to the latest official firmware, the user/pass is changed to admin/Lumlink@100
 
 # TODO
-* Add timers/countdowns (configurable by webpage)
-* Add mqtt authentication
+* Add dayly/weekly timers (configurable by webpage)
 * ... and suggestions are welcome (open an issue)
