@@ -173,9 +173,10 @@ static void get_reset_reason(uint32_t r, char *s)
 
 static const char *status_page =
 	"<!DOCTYPE html><html><head><title>HFeasy status v%d.%d</title></head><body>"\
-	"<h1>HF Easy module status</h1><hr>"\
+	"<h1>HF Easy v%d.%d module status</h1><hr>"\
 	"<h2>System</h2><br>"\
 	"Reset flags: %08x, reason: %s<br>Free memory: %u bytes<br>"\
+	"Uptime: %s"\
 	"<hr>"\
 	"<h2>GPIO status</h2><br>"\
 	"Switch: %s<br>Relay: %s<br>"\
@@ -185,21 +186,23 @@ static const char *status_page =
 	"Countdown (turn ON): %s<br>"\
 	"<hr>"\
 	"<h2>Connectivity</h2>"\
+	"Hostname: %s<br>"\
 	"MQTT server: %s"\
   "</body></html>";
 
 static void USER_FUNC httpd_page_status(char *url, char *rsp)
 {
-	char cd_off[25], cd_on[25];
+	char cd_off[25], cd_on[25], uptime[25];
 	char rr[100];
-	uint32_t i, h, m, s;
+	uint32_t i, h, m, s, now = hfsys_get_time() / 1000;
+	
 	get_reset_reason(state.reset_reason, rr);
 	
 	if (state.cfg.countdown[0] != 0) {
 		if (state.countdown[0] == 0) {
 			sprintf(cd_off, "waiting for ON state");
 		} else {
-			i = state.countdown[0] - (hfsys_get_time() / 1000);
+			i = state.countdown[0] - now;
 			s = i % 60;
 			i /= 60;
 			m = i % 60;
@@ -215,7 +218,7 @@ static void USER_FUNC httpd_page_status(char *url, char *rsp)
 		if (state.countdown[1] == 0) {
 			sprintf(cd_on, "waiting for OFF state");
 		} else {
-			i = state.countdown[1] - (hfsys_get_time() / 1000);
+			i = state.countdown[1] - now;
 			s = i % 60;
 			i /= 60;
 			m = i % 60;
@@ -227,11 +230,22 @@ static void USER_FUNC httpd_page_status(char *url, char *rsp)
 		sprintf(cd_on, "disabled");
 	}
 	
+	i = now;
+	s = i % 60;
+	i /= 60;
+	m = i % 60;
+	i /= 60;
+	h = i % 24;
+	i /= 24;
+	sprintf(uptime, "%d days %dh%dm%ds", i, h, m, s);
+	
 	sprintf(rsp, status_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
-					state.reset_reason, rr, hfsys_get_memory(),
+					HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
+					state.reset_reason, rr, hfsys_get_memory(), uptime,
 					gpio_get_state(GPIO_SWITCH) ? "High" : "Low",
 					state.relay_state ? "Closed(On)" : "Open(Off)",
 					cd_off, cd_on,
+					state.cfg.module_name,
 					state.mqtt_ready ? "Connected" : "Disconnected");
 }
 
