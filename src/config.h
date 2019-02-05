@@ -26,6 +26,8 @@ SOFTWARE.
 
 #include "hfeasy.h"
 
+#define CONFIG_MAX_TIMERS	10
+
 struct hfeasy_config {
 	/* config version */
 	uint8_t		ver;
@@ -46,6 +48,12 @@ struct hfeasy_config {
 
 	/* timers */
 	time_t    countdown[2];
+	
+	struct hfeasy_timer timers[CONFIG_MAX_TIMERS];
+	
+	//time_t    timer_on[CONFIG_MAX_TIMERS], timer_off[CONFIG_MAX_TIMERS];
+	
+	uint32_t  log_ptr;
 };
 
 struct hfeasy_state {
@@ -54,6 +62,7 @@ struct hfeasy_state {
 	uint32_t reset_reason;
 	
 	uint8_t	relay_state;
+	uint8_t relay_modifier;
 	
 	char mac_addr[6];
 	char mac_addr_s[6*2+1];

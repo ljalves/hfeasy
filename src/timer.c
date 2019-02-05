@@ -27,7 +27,7 @@ SOFTWARE.
 static const char *timer_page =
 	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title></head><body>"\
 	"<h1>HFeasy timers</h1><hr>"\
-	"<h2>Countdown timer</h2><br>"\
+	"<h2>Countdown</h2><br>"\
 	"<form action=\"/timer\" method=\"GET\">"\
 	"Turn OFF (0 to disable): <input type=\"text\" name=\"cd0_h\" value=\"%d\" maxlength=\"4\" size=\"4\">h"\
 		"<input type=\"text\" name=\"cd0_m\" value=\"%d\" maxlength=\"2\" size=\"2\">m"\
@@ -36,7 +36,17 @@ static const char *timer_page =
 		"<input type=\"text\" name=\"cd1_m\" value=\"%d\" maxlength=\"2\" size=\"2\">m"\
 		"<input type=\"text\" name=\"cd1_s\" value=\"%d\" maxlength=\"2\" size=\"2\">s<br>"\
 	"<input type=\"submit\" value=\"Apply\"></form>"\
-	"<hr><form action=\"/timer\" method=\"GET\"><input type=\"submit\" value=\"Save to flash\" name=\"save\"></form>"\
+	"<hr>"\
+	"<h2>Timer</h2><br>"\
+	"<form action=\"/timer\" method=\"GET\">"\
+	"%s"\
+	"Action <select name=\"t_t\"><option value=\"on\">Turn ON</option><option value=\"off\">Turn OFF</option></select>"\
+	" at <input type=\"text\" name=\"t_h\" value=\"%d\" maxlength=\"2\" size=\"2\">h"\
+	"<input type=\"text\" name=\"t_m\" value=\"%d\" maxlength=\"2\" size=\"2\">m"\
+	" repeat <select name=\"t_r\"><option value=\"no\">No</option><option value=\"day\">Daily</option><option value=\"week\">Weekly</option></select>"\
+	"<input type=\"submit\" value=\"Add\"></form>"\
+	"<hr>"\
+	"<form action=\"/timer\" method=\"GET\"><input type=\"submit\" value=\"Save to flash\" name=\"save\"></form>"\
 	"</body></html>";
 
 static void USER_FUNC httpd_page_timer(char *url, char *rsp)
@@ -132,7 +142,7 @@ static void USER_FUNC httpd_page_timer(char *url, char *rsp)
 	}
 	
 	sprintf(rsp, timer_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
-			cd0_h, cd0_m, cd0_s, cd1_h, cd1_m, cd1_s);
+			cd0_h, cd0_m, cd0_s, cd1_h, cd1_m, cd1_s, "");
 }	
 
 
@@ -140,34 +150,36 @@ static void USER_FUNC timer_thread(void *opaque)
 {
 	struct hfeasy_state *state = (struct hfeasy_state *) opaque;
 	uint32_t now;
+	int i;
 	
 	while (1) {
 		msleep(1000);
 		
-		if (state->cfg.countdown[0] > 0) {
-			now = hfsys_get_time() / 1000;
-			if (state->countdown[0] > 0) {
-				/* turn OFF timer running */
-				if (state->relay_state == 0) {
-					//u_printf("ABORT OFF COUNTDOWN\r\n");
-					state->countdown[0] = 0;
-				}
-				
-				if (now > state->countdown[0]) {
-					//u_printf("DONE OFF\n\r");
-					state->countdown[0] = 0;
-					gpio_set_relay(RELAY_OFF, 1);
-				}
-			} else {
-				/* wait to start */
-				if (state->relay_state) {
-					/* start turn OFF timer */
-					state->countdown[0] = now + state->cfg.countdown[0];
-					//u_printf("turn OFF after %lu sec, time = %lu\r\n", state->cfg.countdown[0], state->countdown[0]);
+		for (i = 0; i < 2; i++) {
+		
+			if (state->cfg.countdown[i] > 0) {
+				now = hfsys_get_time() / 1000;
+				if (state->countdown[i] > 0) {
+					/* turn OFF/ON timer running */
+					if (state->relay_state == i) {
+						//u_printf("ABORT %s COUNTDOWN\r\n", (i == 0) ? "OFF" : "ON");
+						state->countdown[i] = 0;
+					} else if (now > state->countdown[i]) {
+						//u_printf("DONE OFF/ON\n\r");
+						state->countdown[i] = 0;
+						gpio_set_relay((i == 0) ? RELAY_OFF : RELAY_ON, 1, RELAY_SRC_TIMER);
+					}
+				} else {
+					/* wait to start */
+					if (state->relay_state == (1 - i)) {
+						/* start turn OFF/ON timer */
+						state->countdown[i] = now + state->cfg.countdown[i];
+						//u_printf("turn %s after %lu sec, time = %lu\r\n", (i == 0) ? "OFF" : "ON", state->cfg.countdown[i], state->countdown[i]);
+					}
 				}
 			}
 		}
-
+		#if 0
 		if (state->cfg.countdown[1] > 0) {
 			now = hfsys_get_time() / 1000;
 			if (state->countdown[1] > 0) {
@@ -175,12 +187,10 @@ static void USER_FUNC timer_thread(void *opaque)
 				if (state->relay_state == 1) {
 					//u_printf("ABORT ON COUNTDOWN\r\n");
 					state->countdown[1] = 0;
-				}
-				
-				if (now > state->countdown[1]) {
+				} else if (now > state->countdown[1]) {
 					//u_printf("DONE ON\n\r");
 					state->countdown[1] = 0;
-					gpio_set_relay(RELAY_ON, 1);
+					gpio_set_relay(RELAY_ON, 1, RELAY_SRC_TIMER);
 				}
 			} else {
 				/* wait to start */
@@ -191,7 +201,7 @@ static void USER_FUNC timer_thread(void *opaque)
 				}
 			}
 		}
-
+		#endif
 	}
 }
 

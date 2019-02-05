@@ -8,16 +8,16 @@
 #include <stdint.h>
 #include <time.h>
 
-#include "config.h"
 #include "gpio.h"
 #include "httpd.h"
 #include "mqttcli.h"
 #include "buzzer.h"
 #include "timer.h"
+#include "config.h"
 
 
 #define HFEASY_VERSION_MAJOR	0
-#define HFEASY_VERSION_MINOR	3
+#define HFEASY_VERSION_MINOR	4
 
 
 enum {

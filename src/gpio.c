@@ -134,7 +134,7 @@ void USER_FUNC gpio_set_led(uint8_t st)
 #endif
 }
 
-void USER_FUNC gpio_set_relay(uint8_t action, uint8_t publish)
+void USER_FUNC gpio_set_relay(uint8_t action, uint8_t publish, uint8_t source)
 {
 	struct hfeasy_state *state = config_get_state();
 	char *val;
@@ -155,6 +155,8 @@ void USER_FUNC gpio_set_relay(uint8_t action, uint8_t publish)
 			state->relay_state ^= 1;
 			break;
 	}
+	
+	state->relay_modifier = source | ((publish & 1) << 6) | ((action & 3) << 4);
 	
 	/* set gpio */
 	if (state->relay_state) {
@@ -194,9 +196,9 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 
 	/* set relay */
 	if (strcmp(val, "1") == 0)
-		gpio_set_relay(1, 1);
+		gpio_set_relay(1, 1, RELAY_SRC_HTTP);
 	else if (strcmp(val, "0") == 0)
-		gpio_set_relay(0, 1);
+		gpio_set_relay(0, 1, RELAY_SRC_HTTP);
 }
 
 static void USER_FUNC recovery_mode(void)
@@ -218,6 +220,8 @@ static void USER_FUNC recovery_timer_handler(hftimer_handle_t timer)
 	recovery_counter = 0;
 }
 
+static int prev_sw_state;
+
 static void USER_FUNC debounce_timer_handler(hftimer_handle_t timer)
 {
 #if defined (__LPB100__)
@@ -234,6 +238,13 @@ static void USER_FUNC debounce_timer_handler(hftimer_handle_t timer)
 #else 
 	key_counter = 0;
 	
+	int sw_state = hfgpio_fpin_is_high(GPIO_SWITCH) ? 1 : 0;
+	if (prev_sw_state == sw_state)
+		return;
+		
+	gpio_set_relay(RELAY_TOGGLE, 1, RELAY_SRC_SWITCH);
+	prev_sw_state = sw_state;
+	
 	if (recovery_counter++ == 0) {
 		hftimer_start(recovery_timer);
 	}
@@ -244,7 +255,9 @@ static void USER_FUNC switch_irqhandler(uint32_t arg1, uint32_t arg2)
 {
 	if (key_counter == 0) {
 		key_counter++;
-		gpio_set_relay(2, 1);
+#if defined (__LPB100__)
+		gpio_set_relay(RELAY_TOGGLE, 1, RELAY_SRC_SWITCH);
+#endif
 	}
 	hftimer_start(debounce_timer);
 }
@@ -260,6 +273,8 @@ void USER_FUNC gpio_init(void)
 
 	hfgpio_configure_fpin(GPIO_RELAY, HFM_IO_OUTPUT_0);
 
+	prev_sw_state = hfgpio_fpin_is_high(GPIO_SWITCH) ? 1 : 0;
+
 #if defined(__LPT100F__)
 	if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH,
 				HFM_IO_TYPE_INPUT | HFPIO_IT_EDGE | HFPIO_PULLUP,
@@ -273,7 +288,7 @@ void USER_FUNC gpio_init(void)
 		u_printf("failed to add switch interrupt\n");
 #endif
 
-	debounce_timer = hftimer_create("debouncer", 200, false, HFTIMER_ID_DEBOUNCE, debounce_timer_handler, 0);
+	debounce_timer = hftimer_create("debouncer", 10, false, HFTIMER_ID_DEBOUNCE, debounce_timer_handler, 0);
 	recovery_timer = hftimer_create("recovery", 3000, false, HFTIMER_ID_RECOVERY, recovery_timer_handler, 0);
 
 	httpd_add_page("/state", switch_state_page);

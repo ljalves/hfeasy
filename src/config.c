@@ -179,7 +179,7 @@ static const char *status_page =
 	"Uptime: %s"\
 	"<hr>"\
 	"<h2>GPIO status</h2><br>"\
-	"Switch: %s<br>Relay: %s<br>"\
+	"Switch: %s<br>Relay: %s, last changed by: %s, publish: %d, action: %d"\
 	"<hr>"\
 	"<h2>Timer status</h2><br>"\
 	"Countdown (turn OFF): %s<br>"\
@@ -189,6 +189,9 @@ static const char *status_page =
 	"Hostname: %s<br>"\
 	"MQTT server: %s"\
   "</body></html>";
+
+
+const char *relay_change_src[] = { "HTTP", "MQTT", "TIMER", "SWITCH" };
 
 static void USER_FUNC httpd_page_status(char *url, char *rsp)
 {
@@ -244,11 +247,50 @@ static void USER_FUNC httpd_page_status(char *url, char *rsp)
 					state.reset_reason, rr, hfsys_get_memory(), uptime,
 					gpio_get_state(GPIO_SWITCH) ? "High" : "Low",
 					state.relay_state ? "Closed(On)" : "Open(Off)",
+					relay_change_src[state.relay_modifier & 3],
+					(state.relay_modifier >> 6) & 1, (state.relay_modifier >> 4) & 3,
 					cd_off, cd_on,
 					state.cfg.module_name,
 					state.mqtt_ready ? "Connected" : "Disconnected");
 }
 
+
+void log_write(char *txt)
+{
+	char buf[100];
+	sprintf(buf, "%s\n", txt);
+	hfuflash_write(state.cfg.log_ptr, buf, strlen(buf));
+	state.cfg.log_ptr += strlen(buf);
+}
+
+void log_read(uint32_t line, char *txt)
+{
+	char buf[100];
+	uint32_t j, i = 0;
+	
+	do {
+		hfuflash_read(0, buf, 100);
+		for (j = 0; j < 100; j++) {
+			if (buf[j] == '\n')
+				i++;
+		}
+	} while (i != line);
+}
+
+
+static const char *log_page =
+	"<!DOCTYPE html><html><head><title>HFeasy v%d.%d</title></head><body>"\
+	"<h1>HF Easy v%d.%d log</h1><hr>"\
+	"%s"\
+  "</body></html>";
+
+static void USER_FUNC httpd_page_log(char *url, char *rsp)
+{
+	char log[100];
+	sprintf(rsp, log_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
+					HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
+					log);
+}
 
 static int USER_FUNC hfsys_event_callback(uint32_t event_id, void *param)
 {
@@ -409,4 +451,5 @@ void USER_FUNC config_init(void)
 	/* register webpages */
 	httpd_add_page("/config", httpd_page_config);
 	httpd_add_page("/status", httpd_page_status);
+	httpd_add_page("/log", httpd_page_log);
 }

@@ -26,6 +26,28 @@ SOFTWARE.
 
 #include <hsf.h>
 
+
+struct hfeasy_timer {
+	time_t    time;
+	uint16_t  flags;
+};
+
+#define TIMER_TURN_ON      (1 << 0)
+#define TIMER_TURN_OFF     (1 << 1)
+
+#define TIMER_WEEK_MON     (1 << 2)
+#define TIMER_WEEK_TUE     (1 << 3)
+#define TIMER_WEEK_WED     (1 << 4)
+#define TIMER_WEEK_THU     (1 << 5)
+#define TIMER_WEEK_FRI     (1 << 6)
+#define TIMER_WEEK_SAT     (1 << 7)
+#define TIMER_WEEK_SUN     (1 << 8)
+
+#define TIMER_DAYLY        (1 << 9)
+#define TIMER_WEEKLY       (1 << 9)
+#define TIMER_MONTHLY      (1 << 10)
+
+
 void USER_FUNC timer_init(void);
 
 #endif
