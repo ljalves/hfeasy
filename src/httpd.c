@@ -5,8 +5,6 @@
 
 static const char *http_header = "HTTP/1.1 200 OK\r\n"\
 "Server: HTTPD\r\n"
-"Date: Thu, 01 Jan 1970 00:00:00 GMT\r\n"\
-"Content-Type: text/html\r\n"\
 "Connection: close\r\n\r\n";
 
 
@@ -99,6 +97,7 @@ static int USER_FUNC httpd_callback(char *url, char *rsp)
 			strcpy(r, http_header);
 			r += strlen(http_header);
 			p->callback(url, r);
+			u_printf("'%s' size=%d\r\n", url, strlen(rsp));
 			return 0;
 		}
 		p++;
@@ -107,9 +106,28 @@ static int USER_FUNC httpd_callback(char *url, char *rsp)
 }
 
 
+static const char *css_page = "* {font-family:sans-serif; font-size:12pt;}\r\n"\
+  "h1 {font-size:16pt; color:black;}\r\n"\
+  "h6 {font-size:10pt; color:black; text-align:center;}\r\n"\
+  ".button-menu {background-color:#ffffff; color:blue; margin: 10px; text-decoration:none}\r\n"\
+  ".button-link {padding:5px 15px; background-color:#0077dd; color:#fff; border:solid 1px #fff; text-decoration:none}\r\n"\
+  ".button-menu:hover {background:#ddddff;}\r\n"\
+  ".button-link:hover {background:#369;}\r\n"\
+  "th {padding:10px; background-color:black; color:#ffffff;}\r\n"\
+  "td {padding:7px;}\r\n"\
+  "table {color:black;}\r\n";
+
+void styles_cbk(char *url, char *rsp)
+{
+	strcpy(rsp, css_page);
+}
+
+
 void USER_FUNC httpd_init(void)
 {
 	/* register url handler callback */
 	if (hfhttpd_url_callback_register(httpd_callback, 0) != HF_SUCCESS)
 		u_printf("error registering url callback\r\n");
+	
+	httpd_add_page("/styles.css", styles_cbk);
 }
