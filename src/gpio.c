@@ -201,6 +201,27 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 		gpio_set_relay(0, 1, RELAY_SRC_HTTP);
 }
 
+
+const char *switch_ctrl_page_html =
+	"<html><head><title>HFeasy Control</title></head><body>"
+	"<button onclick=\"turnOn()\">ON</button>"
+	"<button onclick=\"turnOff()\">OFF</button>"
+	"<script>"
+	"function turnOn(){"
+		"const http = new XMLHttpRequest();"
+		"http.open(\"GET\", \"/state?sw=1\", false);"
+		"http.send(null);}"
+	"function turnOff(){"
+		"const http = new XMLHttpRequest();"
+		"http.open(\"GET\", \"/state?sw=0\", false);"
+		"http.send(null);}"
+	"</script></body></html>";
+
+static void USER_FUNC switch_ctrl_page(char *url, char *rsp)
+{
+	strcpy(rsp, switch_ctrl_page_html);
+}
+
 static void USER_FUNC recovery_mode(void)
 {
 	struct hfeasy_state *state = config_get_state();
@@ -292,4 +313,5 @@ void USER_FUNC gpio_init(void)
 	recovery_timer = hftimer_create("recovery", 3000, false, HFTIMER_ID_RECOVERY, recovery_timer_handler, 0);
 
 	httpd_add_page("/state", switch_state_page);
+	httpd_add_page("/ctrl", switch_ctrl_page);
 }
