@@ -3,6 +3,12 @@
 
 #define HTTPD_MAX_PAGES		10
 
+static const char *http_header = "HTTP/1.1 200 OK\r\n"\
+"Server: HTTPD\r\n"
+"Date: Thu, 01 Jan 1970 00:00:00 GMT\r\n"\
+"Content-Type: text/html\r\n"\
+"Connection: close\r\n\r\n";
+
 
 struct httpd_page {
 	const char *url;
@@ -81,6 +87,7 @@ static int USER_FUNC httpd_callback(char *url, char *rsp)
 {
 	struct httpd_page *p = httpd_pages;
 	char buf[50], *a;
+	char *r = rsp;
 	
 	while (p->url != NULL) {
 		strncpy(buf, url, 50);
@@ -89,7 +96,9 @@ static int USER_FUNC httpd_callback(char *url, char *rsp)
 		if (a != NULL)
 			*a = '\0';
 		if (strcmp(p->url, buf) == 0) {
-			p->callback(url, rsp);
+			strcpy(r, http_header);
+			r += strlen(http_header);
+			p->callback(url, r);
 			return 0;
 		}
 		p++;
