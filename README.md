@@ -34,6 +34,11 @@ After flashing hfeasy, you'll have access to the following web pages:
 
 # Firmware
 * [Download here](https://drive.google.com/open?id=1HWl-QiYM2u8lW9TAv1M6Kr9DPkj1_wRG)
+* hfeasy 0v4
+  * Changes:
+    * Added more status (hostname and uptime)
+    * Fixed missing HTTP headers
+    * More robust switch debouncer for on/off module
 * hfeasy 0v3
   * Changes:
     * Added MQTT QoS setting
