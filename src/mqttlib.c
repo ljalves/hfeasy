@@ -144,6 +144,8 @@ enum MQTTErrors mqtt_init(struct mqtt_client *client,
     client->inspector_callback = NULL;
     client->reconnect_callback = NULL;
     client->reconnect_state = NULL;
+		
+    client->pid_lfsr = 0;
 
     return MQTT_OK;
 }
