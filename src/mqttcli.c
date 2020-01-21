@@ -65,6 +65,11 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 	u_printf("Received publish('%s'): %s\n", topic_name, msg);
 	
 	if (strcmp(topic_name, cfg->mqtt_sub_topic) == 0) {
+
+#if defined(__HFEASY_DIMMER__)
+		int lvl = atoi(msg);
+		gpio_set_dimmer(lvl, 0, RELAY_SRC_MQTT);
+#else
 		if (strcmp(cfg->mqtt_on_value, msg) == 0) {
 			if (state->relay_state != 1)
 				gpio_set_relay(1, 0, RELAY_SRC_MQTT);
@@ -72,6 +77,7 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 			if (state->relay_state != 0)
 				gpio_set_relay(0, 0, RELAY_SRC_MQTT);
 		}
+#endif
 	}
 	hfmem_free(topic_name);
 	hfmem_free(msg);

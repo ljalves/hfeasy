@@ -32,6 +32,7 @@
 
 
 void USER_FUNC gpio_init(void);
+void USER_FUNC gpio_set_dimmer(uint8_t lvl, uint8_t publish, uint8_t source);
 void USER_FUNC gpio_set_relay(uint8_t action, uint8_t publish, uint8_t source);
 int USER_FUNC gpio_get_state(int fid);
 void USER_FUNC gpio_set_led(uint8_t st);

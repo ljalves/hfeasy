@@ -242,7 +242,11 @@ void USER_FUNC gpio_set_dimmer(uint8_t lvl, uint8_t publish, uint8_t source)
 	
 	dimmer_timer_period = LIGHT_DIM_BASE_TIME + (MAX_LIGHT_LEVEL - lvl) * LIGHT_DIM_LEVEL_GAP;
 
-	state->relay_state = lvl;	
+	state->relay_state = lvl;
+
+	if (publish && changed)
+		mqttcli_publish(lvl);
+
 }
 
 void USER_FUNC gpio_set_relay(uint8_t action, uint8_t publish, uint8_t source)
