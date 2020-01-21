@@ -168,8 +168,10 @@ const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
 #error "Device not supported!"
 #endif
 
-static hftimer_handle_t debounce_timer, recovery_timer;
+static hftimer_handle_t debounce_timer, recovery_timer, dimmer_timer;
 static volatile uint8_t key_counter = 0, recovery_counter = 0;
+
+uint32_t dimmer_timer_period = 0;
 
 inline int USER_FUNC gpio_get_state(int fid)
 {
@@ -238,8 +240,9 @@ void USER_FUNC gpio_set_dimmer(uint8_t lvl, uint8_t publish, uint8_t source)
 	
 	gpio_set_dimmer_leds(lvl);
 	
-	uint32_t tmr = LIGHT_DIM_BASE_TIME + (MAX_LIGHT_LEVEL - lvl) * LIGHT_DIM_LEVEL_GAP;
+	dimmer_timer_period = LIGHT_DIM_BASE_TIME + (MAX_LIGHT_LEVEL - lvl) * LIGHT_DIM_LEVEL_GAP;
 
+	state->relay_state = lvl;	
 }
 
 void USER_FUNC gpio_set_relay(uint8_t action, uint8_t publish, uint8_t source)
@@ -380,6 +383,7 @@ static void USER_FUNC debounce_timer_handler(hftimer_handle_t timer)
 #endif
 }
 
+
 static void USER_FUNC switch_irqhandler(uint32_t arg1, uint32_t arg2)
 {
 	if (key_counter == 0) {
@@ -390,6 +394,92 @@ static void USER_FUNC switch_irqhandler(uint32_t arg1, uint32_t arg2)
 	}
 	hftimer_start(debounce_timer);
 }
+
+
+#if defined(__HFEASY_DIMMER__)
+static void USER_FUNC switch_up_timer_cbk( hftimer_handle_t htimer)
+{
+	struct hfeasy_state *state = config_get_state();
+
+	if (hfgpio_fpin_is_high(GPIO_SWITCH_UP))
+		return;
+	
+	if (state->relay_state < MAX_LIGHT_LEVEL)
+		gpio_set_dimmer(state->relay_state + 1, 1, RELAY_SRC_SWITCH_DN);
+}
+
+static void USER_FUNC switch_up_irqhandler(uint32_t arg1, uint32_t arg2)
+{
+	struct hfeasy_state *state = config_get_state();
+	static hftimer_handle_t dimmer_kup_timer = NULL;
+
+	if (state->relay_state == 0)
+		return;
+
+	if(dimmer_kup_timer == NULL)
+		dimmer_kup_timer = hftimer_create("key_up_debounce", 30, false, HFTIMER_ID_UP, switch_up_timer_cbk, 0);
+
+	hftimer_change_period(dimmer_kup_timer, 30);
+}
+
+
+static void USER_FUNC switch_dn_timer_cbk( hftimer_handle_t htimer )
+{
+	struct hfeasy_state *state = config_get_state();
+
+	if(hfgpio_fpin_is_high(GPIO_SWITCH_DN))
+		return;
+
+	if (state->relay_state > 1)
+		gpio_set_dimmer(state->relay_state - 1, 1, RELAY_SRC_SWITCH_DN);
+}
+
+static void USER_FUNC switch_dn_irqhandler(uint32_t arg1, uint32_t arg2)
+{
+	static hftimer_handle_t dimmer_kdn_timer = NULL;
+
+	if (dimmer_kdn_timer == NULL)
+		dimmer_kdn_timer = hftimer_create("key_down_debounce", 30, false, HFTIMER_ID_DN, switch_dn_timer_cbk, 0);
+
+	hftimer_change_period(dimmer_kdn_timer, 30);
+}
+
+
+#define GPIO_B_OUT (0x0B) /**<GPIOB output data register macro*/
+extern unsigned int GpioGetReg(unsigned char RegIndex);;
+extern void GpioSetRegOneBit(unsigned char	RegIndex, unsigned int GpioIndex);
+extern void GpioClrRegOneBit(unsigned char	RegIndex, unsigned int GpioIndex);
+
+#define LIGHT_DIM_SHUTDOWN_TIME	1000
+static uint8_t dimmer_state = 0;
+static void USER_FUNC zero_det_timer_cbk( hftimer_handle_t htimer )
+{
+	struct hfeasy_state *state = config_get_state();
+
+	if (dimmer_state == 0) {
+		GpioSetRegOneBit(GPIO_B_OUT, 0x100000);
+		hftimer_change_period(dimmer_timer, LIGHT_DIM_SHUTDOWN_TIME);
+		dimmer_state = 1;
+  }	else {
+		GpioClrRegOneBit(GPIO_B_OUT, 0x100000);
+	}
+}
+
+static void USER_FUNC zero_det_irqhandler(uint32_t arg1, uint32_t arg2)
+{
+	struct hfeasy_state *state = config_get_state();
+
+	if (dimmer_timer == NULL)
+		dimmer_timer = hftimer_create("dimmer", 110000, false, HFTIMER_ID_DIMMER, zero_det_timer_cbk, HFTIMER_FLAG_HARDWARE_TIMER);
+
+	if(state->relay_state > 0)
+		hftimer_change_period(dimmer_timer, dimmer_timer_period);
+	dimmer_state = 0;
+}
+
+#endif
+
+
 
 void USER_FUNC gpio_init(void)
 {
@@ -426,6 +516,22 @@ void USER_FUNC gpio_init(void)
 	hfgpio_fset_out_high(GPIO_LED5);
 	hfgpio_fset_out_high(GPIO_LED6);
 	hfgpio_fset_out_high(GPIO_LED7);
+	
+	if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH_UP,
+				HFM_IO_TYPE_INPUT | HFPIO_IT_FALL_EDGE | HFPIO_PULLUP,
+				switch_up_irqhandler, 1) != HF_SUCCESS)
+		u_printf("failed to add key up interrupt\n");
+
+	if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH_DN,
+				HFM_IO_TYPE_INPUT | HFPIO_IT_FALL_EDGE | HFPIO_PULLUP,
+				switch_dn_irqhandler, 1) != HF_SUCCESS)
+		u_printf("failed to add key down interrupt\n");
+
+	if(hfgpio_configure_fpin_interrupt(GPIO_ZERO_DET,
+				HFM_IO_TYPE_INPUT | HFPIO_IT_EDGE | HFPIO_PULLUP,
+				zero_det_irqhandler, 1) != HF_SUCCESS)
+		u_printf("failed to add zero crossing detector interrupt\n");
+	
 #endif
 	
 	

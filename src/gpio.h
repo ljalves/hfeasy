@@ -27,6 +27,8 @@
 #define RELAY_SRC_MQTT         1
 #define RELAY_SRC_TIMER        2
 #define RELAY_SRC_SWITCH       3
+#define RELAY_SRC_SWITCH_UP    4
+#define RELAY_SRC_SWITCH_DN    5
 
 
 void USER_FUNC gpio_init(void);
