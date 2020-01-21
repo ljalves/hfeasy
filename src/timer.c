@@ -37,7 +37,7 @@ static const char *timer_page =
 		"<input type=\"text\" name=\"cd1_s\" value=\"%d\" maxlength=\"2\" size=\"2\">s<br>"\
 	"<input type=\"submit\" value=\"Apply\"></form>"\
 	"<hr>"\
-	"<h2>Timer</h2><br>"\
+	"<h2>Timer (not functional - under implementation)</h2><br>"\
 	"<form action=\"/timer\" method=\"GET\">"\
 	"%s"\
 	"Action <select name=\"t_t\"><option value=\"on\">Turn ON</option><option value=\"off\">Turn OFF</option></select>"\

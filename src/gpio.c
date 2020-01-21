@@ -24,7 +24,7 @@ SOFTWARE.
 #include "hfeasy.h"
 
 
-#if (defined(__LPT100__)||defined(__LPT100F__)) 
+#if defined(__HFEASY_MODULE__) 
 #ifdef __LPT100F__
 static int module_type = HFM_TYPE_LPT100F;
 #else
@@ -70,7 +70,7 @@ const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE] =
 	HF_M_PIN(11),	//	relay
 	HF_M_PIN(18),	//	switch/button
 };
-#elif defined(__LPB100__)
+#elif defined(__HFEASY_PLUG__)
 static int module_type = HFM_TYPE_LPB100;
 const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
 {
@@ -112,6 +112,58 @@ const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
 	HF_M_PIN(44),	// relay
 	HF_M_PIN(30),	// switch/button
 };
+#elif defined(__HFEASY_DIMMER__)
+static int module_type = HFM_TYPE_LPB100;
+const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
+{
+	HF_M_PIN(2),	//HFGPIO_F_JTAG_TCK
+	HFM_NOPIN,	//HFGPIO_F_JTAG_TDO
+	HFM_NOPIN,	//HFGPIO_F_JTAG_TDI
+	HF_M_PIN(5),	//HFGPIO_F_JTAG_TMS
+	HFM_NOPIN,		//HFGPIO_F_USBDP
+	HFM_NOPIN,		//HFGPIO_F_USBDM
+	HF_M_PIN(39),	//HFGPIO_F_UART0_TX
+	HFM_NOPIN,		//HF_M_PIN(40),	//HFGPIO_F_UART0_RTS
+	HF_M_PIN(41),	//HFGPIO_F_UART0_RX
+	HFM_NOPIN,		//HF_M_PIN(42),	//HFGPIO_F_UART0_CTS
+	
+	HFM_NOPIN,		//HF_M_PIN(27),	//HFGPIO_F_SPI_MISO
+	HF_M_PIN(28),	//HFGPIO_F_SPI_CLK
+	HF_M_PIN(29),	//HFGPIO_F_SPI_CS
+	HFM_NOPIN,		//HF_M_PIN(30),	//HFGPIO_F_SPI_MOSI
+	
+	HFM_NOPIN,	//HFGPIO_F_UART1_TX,
+	HFM_NOPIN,	//HFGPIO_F_UART1_RTS,
+	HFM_NOPIN,	//HFGPIO_F_UART1_RX,
+	HFM_NOPIN,	//HFGPIO_F_UART1_CTS,
+	
+	HFM_NOPIN,		//HF_M_PIN(43),	//HFGPIO_F_NLINK
+	HFM_NOPIN,		//HF_M_PIN(44),	//HFGPIO_F_NREADY
+	HF_M_PIN(45),	//HFGPIO_F_NRELOAD
+	HF_M_PIN(7),	//HFGPIO_F_SLEEP_RQ
+	HF_M_PIN(8),	//HFGPIO_F_SLEEP_ON
+		
+	HFM_NOPIN,		//HF_M_PIN(15),		//HFGPIO_F_WPS
+	HFM_NOPIN,		//HFGPIO_F_RESERVE1
+	HFM_NOPIN,		//HFGPIO_F_RESERVE2
+	HFM_NOPIN,		//HFGPIO_F_RESERVE3
+	HFM_NOPIN,		//HFGPIO_F_RESERVE4
+	HFM_NOPIN,		//HFGPIO_F_RESERVE5
+	
+	HF_M_PIN(43),	//HFGPIO_F_WIFI_LED
+	HF_M_PIN(30),	//HFGPIO_F_SWITCH
+	HF_M_PIN(44),	//HFGPIO_F_KEY
+	HF_M_PIN(40),	//HFGPIO_F_KEY_UP
+	HF_M_PIN(42),	//HFGPIO_F_KEY_DOWN
+	HF_M_PIN(27),	//HFGPIO_F_ZERO_DETECTER
+	HF_M_PIN(23),	//HFGPIO_F_LED1
+	HF_M_PIN(20),	//HFGPIO_F_LED2
+	HF_M_PIN(18),	//HFGPIO_F_LED3
+	HF_M_PIN(15),	//HFGPIO_F_LED4
+	HF_M_PIN(13),	//HFGPIO_F_LED5
+	HF_M_PIN(12),	//HFGPIO_F_LED6
+	HF_M_PIN(11),	//HFGPIO_F_LED7
+};
 #else
 #error "Device not supported!"
 #endif
@@ -132,6 +184,62 @@ void USER_FUNC gpio_set_led(uint8_t st)
 	else
 		hfgpio_fset_out_high(GPIO_LED);
 #endif
+}
+
+void USER_FUNC gpio_set_dimmer_leds(int lvl)
+{
+#if defined(__HFEASY_DIMMER__)
+	if (lvl > 0)
+		hfgpio_fset_out_low(GPIO_LED1);
+	else
+		hfgpio_fset_out_high(GPIO_LED1);
+
+	if (lvl > 1)
+		hfgpio_fset_out_low(GPIO_LED2);
+	else
+		hfgpio_fset_out_high(GPIO_LED2);
+
+	if (lvl > 2)
+		hfgpio_fset_out_low(GPIO_LED3);
+	else
+		hfgpio_fset_out_high(GPIO_LED3);
+
+	if (lvl > 3)
+		hfgpio_fset_out_low(GPIO_LED4);
+	else
+		hfgpio_fset_out_high(GPIO_LED4);
+
+	if (lvl > 4)
+		hfgpio_fset_out_low(GPIO_LED5);
+	else
+		hfgpio_fset_out_high(GPIO_LED5);
+
+	if (lvl > 5)
+		hfgpio_fset_out_low(GPIO_LED6);
+	else
+		hfgpio_fset_out_high(GPIO_LED6);
+
+	if (lvl > 6)
+		hfgpio_fset_out_low(GPIO_LED7);
+	else
+		hfgpio_fset_out_high(GPIO_LED7);
+#endif
+}
+
+
+#define MAX_LIGHT_LEVEL						7
+#define LIGHT_DIM_BASE_TIME				1000
+#define LIGHT_DIM_LEVEL_GAP				1200
+
+void USER_FUNC gpio_set_dimmer(uint8_t lvl, uint8_t publish, uint8_t source)
+{
+	struct hfeasy_state *state = config_get_state();
+	int changed = (lvl != state->relay_state);
+	
+	gpio_set_dimmer_leds(lvl);
+	
+	uint32_t tmr = LIGHT_DIM_BASE_TIME + (MAX_LIGHT_LEVEL - lvl) * LIGHT_DIM_LEVEL_GAP;
+
 }
 
 void USER_FUNC gpio_set_relay(uint8_t action, uint8_t publish, uint8_t source)
@@ -296,19 +404,31 @@ void USER_FUNC gpio_init(void)
 
 	prev_sw_state = hfgpio_fpin_is_high(GPIO_SWITCH) ? 1 : 0;
 
-#if defined(__LPT100F__)
+#if (defined(__HFEASY_MODULE__) || defined(__HFEASY_DIMMER__))
 	if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH,
 				HFM_IO_TYPE_INPUT | HFPIO_IT_EDGE | HFPIO_PULLUP,
 				switch_irqhandler, 1) != HF_SUCCESS)
 		u_printf("failed to add switch interrupt\n");
-#elif defined(__LPB100__)
+#elif defined(__HFEASY_PLUG__)
 	hfgpio_configure_fpin(GPIO_LED, HFM_IO_OUTPUT_1);
 	if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH,
 				HFM_IO_TYPE_INPUT | HFPIO_IT_FALL_EDGE | HFPIO_PULLUP,
 				switch_irqhandler, 1) != HF_SUCCESS)
-		u_printf("failed to add switch interrupt\n");
+		u_printf("failed to add switch interrupt\n");	
 #endif
 
+#if defined(__HFEASY_DIMMER__)
+	/* init dimmer leds */
+	hfgpio_fset_out_high(GPIO_LED1);
+	hfgpio_fset_out_high(GPIO_LED2);
+	hfgpio_fset_out_high(GPIO_LED3);
+	hfgpio_fset_out_high(GPIO_LED4);
+	hfgpio_fset_out_high(GPIO_LED5);
+	hfgpio_fset_out_high(GPIO_LED6);
+	hfgpio_fset_out_high(GPIO_LED7);
+#endif
+	
+	
 	debounce_timer = hftimer_create("debouncer", 10, false, HFTIMER_ID_DEBOUNCE, debounce_timer_handler, 0);
 	recovery_timer = hftimer_create("recovery", 3000, false, HFTIMER_ID_RECOVERY, recovery_timer_handler, 0);
 
