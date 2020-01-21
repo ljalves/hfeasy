@@ -237,6 +237,7 @@ void USER_FUNC gpio_set_dimmer(uint8_t lvl, uint8_t publish, uint8_t source)
 {
 	struct hfeasy_state *state = config_get_state();
 	int changed = (lvl != state->relay_state);
+	char buf[10];
 	
 	gpio_set_dimmer_leds(lvl);
 	
@@ -244,9 +245,10 @@ void USER_FUNC gpio_set_dimmer(uint8_t lvl, uint8_t publish, uint8_t source)
 
 	state->relay_state = lvl;
 
-	if (publish && changed)
-		mqttcli_publish(lvl);
-
+	if (publish && changed) {
+		sprintf(buf, "%d", lvl);
+		mqttcli_publish(buf);
+	}
 }
 
 void USER_FUNC gpio_set_relay(uint8_t action, uint8_t publish, uint8_t source)
