@@ -39,6 +39,7 @@ After flashing hfeasy, you'll have access to the following web pages:
     * Due to limited webpage size, config was split in 2 pages (/config and /config_mqtt)
     * Added "HTTP auth" config option (sets authentication ON for all webpages)
     * Increased switch debounce time (should fix random turn ons/offs)
+    * /state webpage changed to JSON format - if your setup parses the previous webpage output, you need to change it.
 * hfeasy 0v4
   * Changes:
     * Added more status (hostname and uptime)
