@@ -80,14 +80,14 @@
           <AfterMake>
             <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>1</RunUserProg2>
-            <UserProg1Name>fromelf.exe --bin --output ./output/HFEASY.bin ./output/HFEASY.axf</UserProg1Name>
-            <UserProg2Name>../tools/gen_upgrade_bin.exe ./output/HFEASY.bin ./output/HFEASY_MODULE_UPGRADE.bin</UserProg2Name>
+            <UserProg1Name>fromelf.exe --bin --output ./output/HFEASY_MODULE.bin ./output/HFEASY_MODULE.axf</UserProg1Name>
+            <UserProg2Name>../tools/gen_upgrade_bin.exe ./output/HFEASY_MODULE.bin ./output/HFEASY_MODULE_UPGRADE.bin</UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
             <nStopA1X>0</nStopA1X>
             <nStopA2X>0</nStopA2X>
           </AfterMake>
-          <SelectedForBatchBuild>0</SelectedForBatchBuild>
+          <SelectedForBatchBuild>1</SelectedForBatchBuild>
           <SVCSIdString></SVCSIdString>
         </TargetCommonOption>
         <CommonProperty>
@@ -561,7 +561,7 @@
             <nStopA1X>0</nStopA1X>
             <nStopA2X>0</nStopA2X>
           </AfterMake>
-          <SelectedForBatchBuild>0</SelectedForBatchBuild>
+          <SelectedForBatchBuild>1</SelectedForBatchBuild>
           <SVCSIdString></SVCSIdString>
         </TargetCommonOption>
         <CommonProperty>
@@ -1035,7 +1035,7 @@
             <nStopA1X>0</nStopA1X>
             <nStopA2X>0</nStopA2X>
           </AfterMake>
-          <SelectedForBatchBuild>0</SelectedForBatchBuild>
+          <SelectedForBatchBuild>1</SelectedForBatchBuild>
           <SVCSIdString></SVCSIdString>
         </TargetCommonOption>
         <CommonProperty>
@@ -1323,7 +1323,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls>--diag_suppress=494  --c99</MiscControls>
-              <Define>__KEIL_MDK__ __LPB100__ __HFEASY_DIMMER__</Define>
+              <Define>__KEIL_MDK__ __LPT100F__ __HFEASY_DIMMER__</Define>
               <Undefine></Undefine>
               <IncludePath>..\sdk\1.52\include</IncludePath>
             </VariousControls>

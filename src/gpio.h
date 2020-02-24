@@ -7,16 +7,12 @@
 #define GPIO_LED               (HFGPIO_F_USER_DEFINE+0)
 #define GPIO_RELAY             (HFGPIO_F_USER_DEFINE+1)
 #define GPIO_SWITCH            (HFGPIO_F_USER_DEFINE+2)
-#define GPIO_SWITCH_UP         (HFGPIO_F_USER_DEFINE+3)
-#define GPIO_SWITCH_DN         (HFGPIO_F_USER_DEFINE+4)
-#define GPIO_ZERO_DET          (HFGPIO_F_USER_DEFINE+5)
-#define GPIO_LED1         		 (HFGPIO_F_USER_DEFINE+6)
-#define GPIO_LED2         		 (HFGPIO_F_USER_DEFINE+7)
-#define GPIO_LED3         		 (HFGPIO_F_USER_DEFINE+8)
-#define GPIO_LED4         		 (HFGPIO_F_USER_DEFINE+9)
-#define GPIO_LED5         		 (HFGPIO_F_USER_DEFINE+10)
-#define GPIO_LED6         		 (HFGPIO_F_USER_DEFINE+11)
-#define GPIO_LED7         		 (HFGPIO_F_USER_DEFINE+12)
+
+/* dimmer module */
+#define GPIO_SWITCH_UP         (HFGPIO_F_USER_DEFINE+0)
+#define GPIO_SWITCH_DN         (HFGPIO_F_USER_DEFINE+1)
+#define GPIO_I2C_SCL           (HFGPIO_F_USER_DEFINE+3)
+#define GPIO_I2C_SDA           (HFGPIO_F_USER_DEFINE+4)
 
 
 #define RELAY_OFF              0
