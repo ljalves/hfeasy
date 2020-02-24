@@ -367,19 +367,21 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 	//						 "</body></html>", li, str);
 #else
 
-	
-	sprintf(rsp, "<html><head><title>SWITCH STATE</title></head>" \
-							 "<body>SWITCH STATE WEB PAGE<br>" \
-							 "ret=%d, sw='%s' relay_state=%d" \
-							 "</body></html>", ret, val, state->relay_state);
-
-	//u_printf("ret=%d, sw='%s' relay_state=%d\r\n", ret, val, state->relay_state);
-
 	/* set relay */
 	if (strcmp(val, "1") == 0)
 		gpio_set_relay(1, 1, RELAY_SRC_HTTP);
 	else if (strcmp(val, "0") == 0)
 		gpio_set_relay(0, 1, RELAY_SRC_HTTP);
+	
+	sprintf(rsp, "{ \"set\": \"%s\", \"relay_status\": \"%d\" }", val, state->relay_state);
+
+/*	sprintf(rsp, "<html><head><title>SWITCH STATE</title></head>" \
+							 "<body>SWITCH STATE WEB PAGE<br>" \
+							 "ret=%d, sw='%s' relay_state=%d" \
+							 "</body></html>", ret, val, state->relay_state);
+*/
+	//u_printf("ret=%d, sw='%s' relay_state=%d\r\n", ret, val, state->relay_state);
+
 
 #endif
 	
@@ -425,7 +427,9 @@ static void USER_FUNC recovery_timer_handler(hftimer_handle_t timer)
 	recovery_counter = 0;
 }
 
+#if defined(__HFEASY_MODULE__)
 static int prev_sw_state;
+#endif
 
 static void USER_FUNC debounce_timer_handler(hftimer_handle_t timer)
 {
@@ -534,8 +538,6 @@ void USER_FUNC gpio_init(void)
 			msleep(1000);
 	}
 
-	prev_sw_state = gpio_get_state(GPIO_SWITCH);
-
 #if defined (__HFEASY_PLUG__)
 	/* status led */
 	hfgpio_configure_fpin(GPIO_LED, HFM_IO_OUTPUT_1);
@@ -547,6 +549,7 @@ void USER_FUNC gpio_init(void)
 #endif
 
 #if defined(__HFEASY_MODULE__)
+	prev_sw_state = gpio_get_state(GPIO_SWITCH);
 	/* on/off button */
 	if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH,
 				HFM_IO_TYPE_INPUT | HFPIO_IT_EDGE | HFPIO_PULLUP,
