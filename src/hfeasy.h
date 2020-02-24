@@ -17,7 +17,7 @@
 
 
 #define HFEASY_VERSION_MAJOR	0
-#define HFEASY_VERSION_MINOR	4
+#define HFEASY_VERSION_MINOR	5
 
 
 enum {
