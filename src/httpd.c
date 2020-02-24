@@ -125,8 +125,10 @@ void styles_cbk(char *url, char *rsp)
 
 void USER_FUNC httpd_init(void)
 {
+	struct hfeasy_state* state = config_get_state();
+
 	/* register url handler callback */
-	if (hfhttpd_url_callback_register(httpd_callback, 0) != HF_SUCCESS)
+	if (hfhttpd_url_callback_register(httpd_callback, state->cfg.http_auth) != HF_SUCCESS)
 		u_printf("error registering url callback\r\n");
 	
 	httpd_add_page("/styles.css", styles_cbk);
