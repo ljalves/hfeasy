@@ -219,10 +219,10 @@ static void USER_FUNC mqttcli_thread(void* client)
 			
 			case MQTTCLI_STATE_DISCONNECT:
 				close(c->socketfd);
-			case MQTTCLI_STATE_FREETX:
-				hfmem_free(txbuf);
 			case MQTTCLI_STATE_FREERX:
 				hfmem_free(rxbuf);
+			case MQTTCLI_STATE_FREETX:
+				hfmem_free(txbuf);
 			case MQTTCLI_STATE_RESET:
 				state->mqtt_ready = 0;
 				STATE = 0;
