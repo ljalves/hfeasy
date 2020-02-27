@@ -174,12 +174,10 @@ inline int USER_FUNC gpio_get_state(int fid)
 
 
 #if defined(__HFEASY_DIMMER__)
-int USER_FUNC gpio_i2c_send(uint8_t addr, uint8_t data)
+int USER_FUNC gpio_i2c_send(uint8_t addr, uint16_t data)
 {
 	int i, nack;
 	uint8_t d;
-	
-	/* bitbang i2c */
 	
 	/* start */
 	hfgpio_fset_out_low(GPIO_I2C_SDA);
@@ -204,10 +202,10 @@ int USER_FUNC gpio_i2c_send(uint8_t addr, uint8_t data)
 	nack = gpio_get_state(GPIO_I2C_SDA);
 	hfgpio_fset_out_low(GPIO_I2C_SCL);
 
-	if (nack == 0) {
+	if (nack == 0 && data < 0x100) {
 		/* ack received */
 		/* send data */
-		d = data;
+		d = (uint8_t) data;
 		for (i = 0; i < 8; i++) {
 			if (d & 0x80)
 				hfgpio_configure_fpin(GPIO_I2C_SDA, HFM_IO_TYPE_INPUT);
@@ -231,18 +229,60 @@ int USER_FUNC gpio_i2c_send(uint8_t addr, uint8_t data)
 	hfgpio_configure_fpin(GPIO_I2C_SDA, HFM_IO_TYPE_INPUT);
 	return nack;
 }
-#endif
 
-
-void USER_FUNC gpio_set_led(uint8_t st)
+int USER_FUNC gpio_i2c_recv(uint8_t addr, uint8_t *data)
 {
-#if defined (__HFEASY_PLUG__)
-	if (st)
-		hfgpio_fset_out_low(GPIO_LED);
-	else
-		hfgpio_fset_out_high(GPIO_LED);
-#endif
+	int i, nack;
+	uint8_t d;
+	
+	/* start */
+	hfgpio_fset_out_low(GPIO_I2C_SDA);
+	hfgpio_fset_out_low(GPIO_I2C_SCL);
+
+	/* send slave addr */
+	d = addr;
+	for (i = 0; i < 8; i++) {
+		if (d & 0x80)
+			hfgpio_configure_fpin(GPIO_I2C_SDA, HFM_IO_TYPE_INPUT);
+		else
+			hfgpio_fset_out_low(GPIO_I2C_SDA);
+
+		hfgpio_configure_fpin(GPIO_I2C_SCL, HFM_IO_TYPE_INPUT);
+		hfgpio_fset_out_low(GPIO_I2C_SCL);
+		d <<= 1;
+	}
+	/* release SDA */
+	hfgpio_configure_fpin(GPIO_I2C_SDA, HFM_IO_TYPE_INPUT);
+	/* read ack */
+	hfgpio_configure_fpin(GPIO_I2C_SCL, HFM_IO_TYPE_INPUT);
+	nack = gpio_get_state(GPIO_I2C_SDA);
+	hfgpio_fset_out_low(GPIO_I2C_SCL);
+
+	if (nack == 0 && data != NULL) {
+		/* ack received */
+		/* receive data */
+		d = 0;
+		for (i = 0; i < 8; i++) {
+			d <<= 1;
+			hfgpio_configure_fpin(GPIO_I2C_SCL, HFM_IO_TYPE_INPUT);
+			d |= gpio_get_state(GPIO_I2C_SDA);
+			hfgpio_fset_out_low(GPIO_I2C_SCL);
+		}
+		/* release SDA - nack = stop send data */
+		hfgpio_configure_fpin(GPIO_I2C_SDA, HFM_IO_TYPE_INPUT);
+		/* send nack */
+		hfgpio_configure_fpin(GPIO_I2C_SCL, HFM_IO_TYPE_INPUT);
+		hfgpio_fset_out_low(GPIO_I2C_SCL);
+		*data = d;
+	}
+	
+	/* stop condition */
+	hfgpio_configure_fpin(GPIO_I2C_SCL, HFM_IO_TYPE_INPUT);
+	hfgpio_configure_fpin(GPIO_I2C_SDA, HFM_IO_TYPE_INPUT);
+	return nack;
 }
+#endif
+
 
 void USER_FUNC gpio_set_dimmer(uint8_t lvl, uint8_t publish, uint8_t source)
 {
@@ -304,11 +344,13 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 	char val[20];
 	int ret;
 
+#ifdef HAS_BUZZER
 	ret = httpd_arg_find(url, "tone", val);
 	if (ret == 1) {
 		buzzer_play(atoi(val));
 		u_printf("playing tone %d\r\n", atoi(val));
 	}
+#endif
 
 	ret = httpd_arg_find(url, "sw", val);
 	if (ret != 1)
@@ -316,11 +358,10 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 
 
 #if defined(__HFEASY_DIMMER__)
-	uint8_t li = 0;
-	uint16_t addr;
+	uint8_t li = 0, d;
+	uint16_t addr, data;
 
 	char buf[20];
-	uint8_t data;
 
 	strcpy(rsp, "<html><head><title>I2C</title></head>" \
 							 "<body>I2C SCAN<br>");
@@ -330,13 +371,13 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 	if (ret == 1) {
 		addr = atoi(val);
 	}
-	data = 0;
+	data = 0xffff;
 	ret = httpd_arg_find(url, "v", val);
 	if (ret == 1) {
 		data = atoi(val);
 	}
 
-	if (addr != 0xffff) {
+	if ((addr != 0xffff) && (data != 0xffff)) {
 		if (gpio_i2c_send((uint8_t)addr, data) == 0) {
 			sprintf(buf, "sent %u=%u", addr, data);
 			strcat(rsp, buf);
@@ -344,12 +385,26 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 			sprintf(buf, "sent failed");
 			strcat(rsp, buf);
 		}
+	} else if ((addr != 0xffff) && (data == 0xffff)) {
+		if (gpio_i2c_recv((uint8_t)addr, &d) == 0) {
+			sprintf(buf, "recv %u=%u", addr, d);
+			strcat(rsp, buf);
+		} else {
+			sprintf(buf, "recv failed");
+			strcat(rsp, buf);
+		}
 	} else {
-	
 		li = 0;
-		for (addr = 0; addr < 0x80; addr++)
-		{
+		for (addr = 0; addr < 0x80; addr++) {
 			if (gpio_i2c_send((uint8_t)(addr<<1), data) == 0) {
+				sprintf(buf, " %u", addr);
+				strcat(rsp, buf);
+				li++;
+			}
+			msleep(1);
+		}
+		for (addr = 0; addr < 0x80; addr++) {
+			if (gpio_i2c_recv((uint8_t)(addr<<1) | 1, NULL) == 0) {
 				sprintf(buf, " %u", addr);
 				strcat(rsp, buf);
 				li++;
@@ -372,6 +427,9 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 		gpio_set_relay(1, 1, RELAY_SRC_HTTP);
 	else if (strcmp(val, "0") == 0)
 		gpio_set_relay(0, 1, RELAY_SRC_HTTP);
+
+	if (state->cfg.wifi_led & LED_CONFIG_HTTP)
+		led_ctrl("n1f"); /* got data = 1 blink */
 	
 	sprintf(rsp, "{ \"set\": \"%s\", \"relay_status\": \"%d\" }", val, state->relay_state);
 
@@ -381,7 +439,6 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 							 "</body></html>", ret, val, state->relay_state);
 */
 	//u_printf("ret=%d, sw='%s' relay_state=%d\r\n", ret, val, state->relay_state);
-
 
 #endif
 	
