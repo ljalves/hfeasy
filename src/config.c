@@ -23,12 +23,12 @@ SOFTWARE.
 
 #include "hfeasy.h"
 
-#define CONFIG_MAGIC_VER1  0xa4
+#define CONFIG_MAGIC_VER1  0xa5
 #define CONFIG_OFFSET      0x00
 #define CONFIG_SIZE        (sizeof(struct hfeasy_config))
 
 struct hfeasy_state state;
-static hftimer_handle_t reset_timer, led_timer;
+static hftimer_handle_t reset_timer;
 
 void USER_FUNC get_module_name(char *buf);
 
@@ -42,19 +42,6 @@ void USER_FUNC reboot(void)
 	hftimer_start(reset_timer);
 }
 
-static void USER_FUNC led_timer_handler(hftimer_handle_t timer)
-{
-	static char led = 0;
-	
-	led ^= 1;
-	if (state.mqtt_ready == 0) {
-		gpio_set_led(led);
-		hftimer_start(timer);
-	} else {
-		gpio_set_led(0);
-	}
-}
-
 static const char *config_page =
 	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
 	"<h1>HFeasy config page</h1><hr>"\
@@ -63,6 +50,13 @@ static const char *config_page =
 	"<th colspan=\"2\">Module"\
 	"<tr><td>Module name<td><input type=\"text\" name=\"module_name\" value=\"%s\">"\
 	"<tr><td>HTTP auth?<td><input type=\"checkbox\" name=\"http_auth\" value=\"1\" %s>"\
+	"<tr><td>Wifi LED (if supported)<td><select name=\"wifi_led\">"\
+	"<option value=\"0\"%s>Off</option>"\
+	"<option value=\"1\"%s>MQTT</option>"\
+	"<option value=\"2\"%s>HTTP</option>"\
+	"<option value=\"3\"%s>All</option>"\
+	"<option value=\"4\"%s>Find</option>"\
+	"</select>"\
 	"</table><input type=\"submit\" value=\"Commit values\"></form>"\
 	"<hr><form action=\"/config\" method=\"GET\"><input type=\"submit\" value=\"Save to flash and reboot\" name=\"save\"></form>"\
 	"</body></html>";
@@ -85,6 +79,13 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 		if (tmp[0] == '1')
 			state.cfg.http_auth = 1;
 	}
+
+	ret = httpd_arg_find(url, "wifi_led", tmp);
+	if (ret > 0) {
+		state.cfg.wifi_led = atoi(tmp);
+		if (state.cfg.wifi_led > 4)
+			state.cfg.wifi_led = 0;
+	}
 	
 	ret = httpd_arg_find(url, "save", tmp);
 	if (ret > 0) {
@@ -93,9 +94,20 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 	}
 	
 	sprintf(rsp, config_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
-		state.cfg.module_name, state.cfg.http_auth == 1 ? "checked" : ""
+		state.cfg.module_name, state.cfg.http_auth == 1 ? "checked" : "",
+		state.cfg.wifi_led == 0 ? "selected" : "",
+		state.cfg.wifi_led == 1 ? "selected" : "",
+		state.cfg.wifi_led == 2 ? "selected" : "",
+		state.cfg.wifi_led == 3 ? "selected" : "",
+		state.cfg.wifi_led == 4 ? "selected" : ""
 	);
 
+	if (state.cfg.wifi_led == LED_CONFIG_FIND) {
+		led_ctrl("n5f5n2f2n2f2n5f5n1f1r"); /* find blink pattern */
+	} else {
+		led_ctrl("f");
+	}	
+	
 	u_printf("page_size=%d\r\n", strlen(rsp));
 }
 
@@ -331,23 +343,22 @@ static int USER_FUNC hfsys_event_callback(uint32_t event_id, void *param)
 	switch(event_id) {
 		case HFE_WIFI_STA_CONNECTED:
 			u_printf("wifi sta connected!\r\n");
-			hftimer_change_period(led_timer, 600);
+			led_ctrl("n51f51r");
 			break;
 			
 		case HFE_WIFI_STA_DISCONNECTED:
 			state.has_ip = 0;
 			u_printf("wifi sta disconnected!\r\n");
-			hftimer_change_period(led_timer, 200);
+			led_ctrl("n2f2r");
 			break;
 			
 		case HFE_DHCP_OK:
 			{
 				uint32_t *p_ip;
 				p_ip = (uint32_t*) param;
-				HF_Debug(DEBUG_WARN, "dhcp ok %08X!\r\n", *p_ip);
 				u_printf("dhcp ok %08X!", *p_ip);
 				state.has_ip = 1;
-				hftimer_change_period(led_timer, 1000);
+				led_ctrl("f");
 			}
 			break;
 		
@@ -480,7 +491,6 @@ void USER_FUNC config_init(void)
 		HF_Debug(DEBUG_ERROR,"error registering system event callback\r\n");
 
 	reset_timer = hftimer_create("reboot", 1000, false, HFTIMER_ID_RESET, reboot_timer_handler, 0);
-	led_timer = hftimer_create("led", 400, false, 3, led_timer_handler, 0);
 	
 	/* register webpages */
 	httpd_add_page("/config", httpd_page_config);

@@ -46,6 +46,7 @@ struct hfeasy_config {
 	/* module */
 	char      module_name[30];
 	char      http_auth;
+	uint8_t   wifi_led;
 
 	/* timers */
 	time_t    countdown[2];

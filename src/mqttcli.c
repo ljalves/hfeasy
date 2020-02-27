@@ -65,6 +65,8 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 	u_printf("Received publish('%s'): %s\n", topic_name, msg);
 	
 	if (strcmp(topic_name, cfg->mqtt_sub_topic) == 0) {
+		if (state->cfg.wifi_led & LED_CONFIG_MQTT)
+			led_ctrl("n1f"); /* got data = 1 blink */
 
 #if defined(__HFEASY_DIMMER__)
 		int lvl = atoi(msg);
@@ -199,14 +201,15 @@ static void USER_FUNC mqttcli_thread(void* client)
 				{
 					if (state->mqtt_ready == 0) {
 						/* disconnect */
-						gpio_set_led(0);
+						if (state->cfg.wifi_led & LED_CONFIG_MQTT)
+							led_ctrl("n1f1n1fsr");	/* disconnected = 2 blinks, 1sec interval */
 						STATE = MQTTCLI_STATE_DISCONNECT;
-					} else if (state->mqtt_ready == 2) {
-						gpio_set_led(0);
 					} else if (++state->mqtt_ready == MQTT_PING_COUNT) {
+						/* mqtt ping */
+						if (state->cfg.wifi_led & LED_CONFIG_MQTT)
+							led_ctrl("n1f1n1f1n1f"); /* ping = 3 blinks */
 						state->mqtt_ready = 1;
 						mqtt_ping(&mqttcli);
-						gpio_set_led(1);
 					}
 					
 					if (mqtt_sync(c) != MQTT_OK) {
@@ -248,8 +251,11 @@ void USER_FUNC mqttcli_publish(char *value)
 			flags = MQTT_PUBLISH_QOS_2;
 			break;
 	}
-	if (state->mqtt_ready)
+	if (state->mqtt_ready) {
 		mqtt_publish(&mqttcli, state->cfg.mqtt_pub_topic, value, strlen(value), flags);
+		if (state->cfg.wifi_led & LED_CONFIG_MQTT)
+			led_ctrl("n1f1n1f"); /* publish = 2 blinks */
+	}
 }
 
 

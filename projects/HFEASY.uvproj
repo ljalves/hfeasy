@@ -466,6 +466,11 @@
               <FileType>1</FileType>
               <FilePath>..\src\timer.c</FilePath>
             </File>
+            <File>
+              <FileName>led.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\led.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -940,6 +945,11 @@
               <FileType>1</FileType>
               <FilePath>..\src\timer.c</FilePath>
             </File>
+            <File>
+              <FileName>led.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\led.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1413,6 +1423,11 @@
               <FileName>timer.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\timer.c</FilePath>
+            </File>
+            <File>
+              <FileName>led.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\led.c</FilePath>
             </File>
           </Files>
         </Group>

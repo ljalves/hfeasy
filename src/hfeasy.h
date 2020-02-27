@@ -14,10 +14,28 @@
 #include "buzzer.h"
 #include "timer.h"
 #include "config.h"
+#include "led.h"
 
 
 #define HFEASY_VERSION_MAJOR	0
-#define HFEASY_VERSION_MINOR	5
+#define HFEASY_VERSION_MINOR	6
+
+
+#if defined (__HFEASY_PLUG__)
+#define HAS_WIFI_LED
+#define HAS_PUSH_BUTTON
+#endif
+
+#if defined (__HFEASY_MODULE__)
+#define HAS_BUZZER
+#define HAS_TOGGLE_BUTTON
+#endif
+
+#if defined(__HFEASY_DIMMER__)
+#define HAS_WIFI_LED
+#define HAS_PUSH_BUTTON
+#endif
+
 
 
 enum {
