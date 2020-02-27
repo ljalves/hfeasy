@@ -24,6 +24,7 @@ SOFTWARE.
 
 #include "hfeasy.h"
 
+#if HAS_BUZZER
 
 #define NOTE_B0  31
 #define NOTE_C1  33
@@ -528,7 +529,6 @@ static void USER_FUNC buzzer_timer_handler(hftimer_handle_t timer)
 
 void USER_FUNC buzzer_play(uint8_t tone)
 {
-#if defined(__LPT100F__)
 	hftimer_stop(buzzer_timer);
 	hfgpio_pwm_disable(GPIO_BUZZER);
 	hfgpio_fset_out_low(GPIO_BUZZER);
@@ -539,15 +539,14 @@ void USER_FUNC buzzer_play(uint8_t tone)
 	buzzer_state.song = songs[tone];
 
 	hftimer_change_period(buzzer_timer, 100);
-#endif
-	}
-
-
+}
 
 void USER_FUNC buzzer_init(void)
 {
-#if defined(__LPT100F__)
 	hfgpio_configure_fpin(GPIO_BUZZER, HFM_IO_OUTPUT_0);
 	buzzer_timer = hftimer_create("buzzer", 10, false, HFTIMER_ID_BUZZER, buzzer_timer_handler, 0);
-#endif
 }
+#else
+void USER_FUNC buzzer_play(uint8_t tone) {}
+void USER_FUNC buzzer_init(void) {}
+#endif
