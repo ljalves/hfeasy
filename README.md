@@ -1,6 +1,10 @@
 # hfeasy
 HF-LPx100 firmware for Ankuoo devices
 
+**WARNING:** There are some devices (newer?) that use a different module (the LPB130). They should be easy to identify since the main webpage is different and only allows to configure wifi. Don't flash this firmware or the original webpage binary on these devices as they can become a brick (only recoverable by serial bootloader).
+I'll build the firmware image for these devices as soon as I get my hands in one of them.
+
+
 If you like this project please [donate](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5SMU6YE5XG6JG&source=url)!
 
 # Implemented Features:
