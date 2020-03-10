@@ -36,8 +36,15 @@ After flashing hfeasy, you'll have access to the following web pages:
 * Wifi Module (http://www.lumitek.cn/en/productsd.php?pid=1093)
 ![Wifi Module](http://www.lumitekgroup.com/upload/2015062315503112.jpg)
 
+* US Wall Dimmer (AW51011D)
+<img src="https://images-na.ssl-images-amazon.com/images/I/413UPchrIfL._SL1000_.jpg" width="400">
+
 # Firmware
 * [Download here](https://drive.google.com/open?id=1HWl-QiYM2u8lW9TAv1M6Kr9DPkj1_wRG)
+* hfeasy 0v6
+  * Changes:
+    * Added WiFi LED config option (under /config)
+    * US wall dimmer module is now supported
 * hfeasy 0v5
   * Changes:
     * Due to limited webpage size, config was split in 2 pages (/config and /config_mqtt)
