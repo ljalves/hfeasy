@@ -37,8 +37,8 @@ struct hfeasy_config {
 	uint16_t  mqtt_server_port;
 	char      mqtt_server_user[30];
 	char      mqtt_server_pass[30];
-	char      mqtt_sub_topic[20];
-	char      mqtt_pub_topic[20];
+	char      mqtt_sub_topic[30];
+	char      mqtt_pub_topic[30];
 	uint8_t   mqtt_qos;
 	char      mqtt_on_value[10];
 	char      mqtt_off_value[10];
@@ -65,6 +65,9 @@ struct hfeasy_state {
 	
 	uint8_t	relay_state;
 	uint8_t relay_modifier;
+#if defined(__HFEASY_DIMMER__)
+	uint8_t dimmer_level;
+#endif
 	
 	char mac_addr[6];
 	char mac_addr_s[6*2+1];

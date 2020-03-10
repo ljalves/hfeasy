@@ -9,7 +9,7 @@
 #define GPIO_SWITCH            (HFGPIO_F_USER_DEFINE+2)
 
 /* dimmer module */
-#define GPIO_SWITCH_UP         (HFGPIO_F_USER_DEFINE+0)
+#define GPIO_SWITCH_UP         (HFGPIO_F_USER_DEFINE+5)
 #define GPIO_SWITCH_DN         (HFGPIO_F_USER_DEFINE+1)
 #define GPIO_I2C_SCL           (HFGPIO_F_USER_DEFINE+3)
 #define GPIO_I2C_SDA           (HFGPIO_F_USER_DEFINE+4)
