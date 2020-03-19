@@ -30,7 +30,8 @@ After flashing hfeasy, you'll have access to the following web pages:
     * Plug: Press and hold the switch for more than 3 sec
 
 # Supported devices (so far...)
-* Wifi Plug (http://www.lumitek.cn/en/productsd.php?pid=1095)
+* Wifi Plug ([Ankuoo REC](http://www.lumitek.cn/en/productsd.php?pid=1095), [Ankuoo NEO](https://www.ankuoo.com/products/?sort=1))
+
 ![Wifi Plug](http://www.lumitekgroup.com/upload/2015062911265369.jpg)
 
 * Wifi Module (http://www.lumitek.cn/en/productsd.php?pid=1093)
