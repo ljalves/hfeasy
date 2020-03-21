@@ -54,6 +54,7 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 {
 	struct hfeasy_state *state = config_get_state();
 	struct hfeasy_config *cfg = &state->cfg;
+	uint8_t publish;
 
 	char *topic_name = (char*) hfmem_malloc(published->topic_name_size + 1);
 	char *msg = (char*) hfmem_malloc(published->application_message_size + 1);
@@ -68,16 +69,18 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 		if (state->cfg.wifi_led & LED_CONFIG_MQTT)
 			led_ctrl("n1f"); /* got data = 1 blink */
 
+		publish = strcmp(cfg->mqtt_sub_topic, cfg->mqtt_pub_topic);
+
 #if defined(__HFEASY_DIMMER__)
 		int lvl = atoi(msg);
-		gpio_set_dimmer(lvl, 0, RELAY_SRC_MQTT);
+		gpio_set_dimmer(lvl, publish, RELAY_SRC_MQTT);
 #else
 		if (strcmp(cfg->mqtt_on_value, msg) == 0) {
 			if (state->relay_state != 1)
-				gpio_set_relay(1, 0, RELAY_SRC_MQTT);
+				gpio_set_relay(1, publish, RELAY_SRC_MQTT);
 		} else if (strcmp(cfg->mqtt_off_value, msg) == 0) {
 			if (state->relay_state != 0)
-				gpio_set_relay(0, 0, RELAY_SRC_MQTT);
+				gpio_set_relay(0, publish, RELAY_SRC_MQTT);
 		}
 #endif
 	}

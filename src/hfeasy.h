@@ -18,7 +18,7 @@
 
 
 #define HFEASY_VERSION_MAJOR	0
-#define HFEASY_VERSION_MINOR	6
+#define HFEASY_VERSION_MINOR	7
 
 
 #if defined (__HFEASY_PLUG__)
