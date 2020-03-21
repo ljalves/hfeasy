@@ -42,6 +42,9 @@ After flashing hfeasy, you'll have access to the following web pages:
 
 # Firmware
 * [Download here](https://drive.google.com/open?id=1HWl-QiYM2u8lW9TAv1M6Kr9DPkj1_wRG)
+* hfeasy 0v7
+  * Changes:
+    * MQTT fixes: Publish state when sub and pub topics are different
 * hfeasy 0v6
   * Changes:
     * Added WiFi LED config option (under /config)
