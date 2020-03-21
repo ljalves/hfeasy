@@ -118,7 +118,7 @@ void USER_FUNC led_init(void)
 void USER_FUNC led_ctrl(char *a)
 {
 }
-void USER_FUNC led_init(int action)
+void USER_FUNC led_init(void)
 {
 }
 #endif

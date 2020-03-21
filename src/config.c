@@ -23,7 +23,7 @@ SOFTWARE.
 
 #include "hfeasy.h"
 
-#define CONFIG_MAGIC_VER1  0xa5
+#define CONFIG_MAGIC_VER1  0xd5
 #define CONFIG_OFFSET      0x00
 #define CONFIG_SIZE        (sizeof(struct hfeasy_config))
 
