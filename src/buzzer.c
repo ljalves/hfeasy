@@ -146,6 +146,18 @@ const char song18[] = "Smurfs:d=32,o=5,b=200:4c#6,16p,4f#6,p,16c#6,p,8d#6,p,8b,p
 const char song19[] = "MahnaMahna:d=16,o=6,b=125:c#,c.,b5,8a#.5,8f.,4g#,a#,g.,4d#,8p,c#,c.,b5,8a#.5,8f.,g#.,8a#.,4g,8p,c#,c.,b5,8a#.5,8f.,4g#,f,g.,8d#.,f,g.,8d#.,f,8g,8d#.,f,8g,d#,8c,a#5,8d#.,8d#.,4d#,8d#.";
 const char song20[] = "LeisureSuit:d=16,o=6,b=56:f.5,f#.5,g.5,g#5,32a#5,f5,g#.5,a#.5,32f5,g#5,32a#5,g#5,8c#.,a#5,32c#,a5,a#.5,c#.,32a5,a#5,32c#,d#,8e,c#.,f.,f.,f.,f.,f,32e,d#,8d,a#.5,e,32f,e,32f,c#,d#.,c#";
 const char song21[] = "MissionImp:d=16,o=6,b=95:32d,32d#,32d,32d#,32d,32d#,32d,32d#,32d,32d,32d#,32e,32f,32f#,32g,g,8p,g,8p,a#,p,c7,p,g,8p,g,8p,f,p,f#,p,g,8p,g,8p,a#,p,c7,p,g,8p,g,8p,f,p,f#,p,a#,g,2d,32p,a#,g,2c#,32p,a#,g,2c,a#5,8c,2p,32p,a#5,g5,2f#,32p,a#5,g5,2f,32p,a#5,g5,2e,d#,8d";
+const char song22[] = "DoomLev1:d=32,o=5,b=56:f,f,f6,f,f,d#6,f,f,c#6,f,f,b,f,f,c6,c#6,f,f,f6,f,f,d#6,f,f,c#6,f,f,8b.,f,f,f6,f,f,d#6,f,f,c#6,f,f,b,f,f,c6,c#6,f,f,f6,f,f,d#6,f,f,c#6,f,f,8b.,a#,a#,a#6,a#,a#,g#6,a#,a#,f#6,a#,a#,e6,a#,a#,f6,f#6,a#,a#,a#6,a#,a#,g#6,a#,a#,f#6,a#,a#,8e6";
+const char song23[] = "ZeldaTheme:d=16,o=6,b=50:8b5,8f#.5,b5,32b5,32c#,32d#,32e,4f#,f#,32f#.,32g.,32a.,4b,32b,32b.,32a.,32g.,a.,32g.,4f#,8f#,e,32e,32f#,4g,f#,e,d,32d,32e,4f#,e,d,c#,32c#,32d#,4f,8g#,4f#";
+const char song24[] = "TMNT:d=4,o=5,b=100:8e,8f#,8e,8f#,8e,16f#,8e.,8f#,8g,8a,8g,8a,8g,16a,8g.,8a,8c6,8d6,8c6,8d6,8c6,16d6,8c.6,8d6,16a,16a,16a,16a,8g,8a,8p,16a,16a,16a,16a";
+const char song25[] = "Tequila:d=16,o=5,b=100:c#,f#,p,f#,f#,g#,e,p,f#,p,c#,4p,c#,f#,p,f#,f#,g#,e,p,f#,4p,c#,f#,p,f#,f#,g#,e,p,f#,p,c#,4p,c#,f#,p,f#,f#,g#,e,p,f#,4p,c#,f#,g#,2a,f#,4p,c#,f#,g#,2a,f#,4p,g#,p,g#,p,g#,g#,p,c#6";
+const char song26[] = "Puff:d=4,o=5,b=70:8b.,16b,8b,8b,a#,f#,g#,8b,8b,f#.,8f#,16e,8e,8f#.,8e,16d#,8f#,8b.,16b,16b,8b,8g#,16a#,8b,c#.6,16b,8b.,8b,8b,8a#,f#.,8g#,8g#,8b,8b,f#.,8f#,8e,8e,8f#,8e,16d#,8f#,b,16b,16g#,8b.,8a#,8c#6,b";
+const char song27[] = "Ironic:d=16,o=5,b=40:32p,32g,g,c6,32b,4g,32g,32e,32g,8g,8a,32g,g,c6,32b,a,32a#,a,4g,32g,32e,a,g,a,8e,32g,g,c6,32b,4g,32g,32e,g,g,g,4a,32g,a#,a,g,8a,f,32a,4g";
+const char song28[] = "LikeAVirgin:d=16,o=5,b=80:c#,d#,8f#,2d#,8g#,g#,32f#.,g#,g#,8c#6,2a#,c#,d#,8a#,8g#,f#,8g#,4d#.,32f#.,g#,8f#,4d#.,c#,32a#.,f#,g#,8f#,g#,f#,f,8d#";
+const char song29[] = "AllStar:d=4,o=5,b=40:16g.,32d.6,32b.,16b.,32a.,32g.,32g.,16c.6,32b.,32b.,32a.,32a.,16g.,32g.,32d.6,32b.,32b.,32a.,32a.,32g.,32g.,16e.,d,32g.,32g.,32d.6,32b.,32b.,32a.,32a.,32g.,32g.,16c.6,32b.,32b.,32a.,32a.,32g.,32g.,16d.6,32b.,32b.,16a.,32g.,32g.,16a.,8e";
+const char song30[] = "Graduation:d=4,o=5,b=140:8e6,8g6,g6,d6,p,8c6,8e6,e6,b,p,8a,8c6,c6,g,p,8a,8c6,8c6,8b,b,8p,8e6,8g6,g6,d6,p,8c6,8e6,e6,b,p,8a,8c6,c6,g,p,8a,8c6,8c6,8b,b";
+const char song31[] = "Canon:d=16,o=6,b=125:8a#.,g.,g#.,8a#.,g.,g#.,a#.,a#.5,c.,d.,d#.,f.,g.,g#.,8g.,d#.,f.,8g.,g.5,g#.5,a#.5,c.,a#.5,g#.5,a#.5,g.5,g#.5,a#.5,8g#.5,c.,a#.5,8g#.5,g.5,f.5,g.5,f.5,d#.5,f.5,g.5,g#.5,a#.5,c.,8g#.5,c.,a#.5,8c.,d.,d#.,a#.5,c.,d.,d#.,f.,g.,g#.,8a#";
+const char song32[] = "KnightRider:d=4,o=5,b=125:16e,16p,16f,16e,16e,16p,16e,16e,16f,16e,16e,16e,16d#,16e,16e,16e,16e,16p,16f,16e,16e,16p,16f,16e,16f,16e,16e,16e,16d#,16e,16e,16e,16d,16p,16e,16d,16d,16p,16e,16d,16e,16d,16d,16d,16c,16d,16d,16d,16d,16p,16e,16d,16d,16p,16e,16d,16e,16d,16d,16d,16c,16d,16d,16d";
+const char song33[] = "MacGyver:d=4,o=6,b=150:8b4,8e5,8a5,8b5,a5,8e5,8b4,8p,8e5,8a5,8b5,8a5,8e5,b4,8p,8e5,8a5,8b5,a5,8e5,8b4,8p,8a5,8d,8c,8d,8c,8b5,8a5,8b4,8e5,8a5,8b5,a5,8e5,8b4,8p,8e5,8a5,8b5,8a5,8e5,b4,8p,8e5,8a5,8b5,a5,8e5,8b4,8p,8a5,8d,8c,8d,8c,8b5,8a5,b5,8p,2b5,8p,b5,8p,a5,d.,b5,8p,2b5,8p,8b5,8p,2a5,p,8c,8c,8c,8c,8c,8c,2b5,16p,8f#5,8a5,8p,2g5,8p,8c,8c,8p,b5,8a5,8b5,8a5,8g5,8p,e,2a5,16p,8c,8c,8p,2b5,8p,8f#5,8a5,8p,2g5,8p,8c,8c,8p,4b5,8a5,8b5,8a5,8g5,8p,4e,2a5,2b5,32p,8c,8b5,8a5,c,8b5,8a5,8d,8c,8b5,d,8c,8b5,e,8d,8e,f#,b5,g,8p,f#,f,b5,8g,8e,8b5,8f#,8d,8a5,8e,8c,8g5,8d,8b5,8g5,8c,8e5,8b5,8d5,8c,8b5,8a5,8g5,a#5,a5,8g,8g5,8d,8g5,8d#,8d#5,8a#5,8a5,8g5,8g4,8d5,8g4,8d#5,8g4,8a#4,8a4,8g4,8g4,8g4,8g4,8g4,8g4,8g4";
 
 const char *songs[] = {
 	song1,
@@ -169,6 +181,18 @@ const char *songs[] = {
 	song19,
 	song20,
 	song21,
+	song22,
+	song23,
+	song24,
+	song25,
+	song26,
+	song27,
+	song28,
+	song29,
+	song30,
+	song31,
+	song32,
+	song33,
 };	
 	
 
@@ -328,11 +352,11 @@ static void USER_FUNC buzzer_timer_handler(hftimer_handle_t timer)
   uint8_t note;
   uint8_t scale;
 	
-u_printf(".%d.", state);
+	//u_printf(".%d.", state);
 	switch (state) {
 		case 0:
 			/* init */
-			u_printf("init\r\n");
+			//u_printf("init\r\n");
 			p = buzzer_state.song;
 			
 			if (p == NULL)
@@ -378,7 +402,7 @@ u_printf(".%d.", state);
 			// BPM usually expresses the number of quarter notes per minute
 			wholenote = (60 * 1000L / bpm) * 4;  // this is the time for whole note (in milliseconds)
 
-			u_printf("starting tune %d %d\r\n", bpm, wholenote);
+			//u_printf("starting tune %d %d\r\n", bpm, wholenote);
 			
 			state = 1;
 			hftimer_start(buzzer_timer);
