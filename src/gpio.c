@@ -23,67 +23,97 @@ SOFTWARE.
 
 #include "hfeasy.h"
 
-
-#if defined(__HFEASY_MODULE__) 
-#ifdef __LPT100F__
-static int module_type = HFM_TYPE_LPT100F;
-#else
-static int module_type = HFM_TYPE_LPT100;
-#endif
-const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE] =
+int gpio_lpt100f[11] =
 {
-	HF_M_PIN(2),	//HFGPIO_F_JTAG_TCK
-	HF_M_PIN(3),	//HFGPIO_F_JTAG_TDO
-	HF_M_PIN(4),	//HFGPIO_F_JTAG_TDI
-	HF_M_PIN(5),	//HFGPIO_F_JTAG_TMS
-	HFM_NOPIN,		//HFGPIO_F_USBDP
-	HFM_NOPIN,		//HFGPIO_F_USBDM
-	HF_M_PIN(39),	//HFGPIO_F_UART0_TX
-	HF_M_PIN(40),	//HFGPIO_F_UART0_RTS
-	HF_M_PIN(41),	//HFGPIO_F_UART0_RX
-	HF_M_PIN(42),	//HFGPIO_F_UART0_CTS
-	
-	HF_M_PIN(27),	//HFGPIO_F_SPI_MISO
-	HF_M_PIN(28),	//HFGPIO_F_SPI_CLK
-	HF_M_PIN(29),	//HFGPIO_F_SPI_CS
-	HF_M_PIN(30),	//HFGPIO_F_SPI_MOSI
-	
-	HFM_NOPIN,	//HFGPIO_F_UART1_TX,
-	HFM_NOPIN,	//HFGPIO_F_UART1_RTS,
-	HFM_NOPIN,	//HFGPIO_F_UART1_RX,
-	HFM_NOPIN,	//HFGPIO_F_UART1_CTS,
-	
-	HFM_NOPIN, //HF_M_PIN(11),	//HFGPIO_F_NLINK
-	HFM_NOPIN, //HF_M_PIN(12),	//HFGPIO_F_NREADY
-	HF_M_PIN(45),	//HFGPIO_F_NRELOAD
-	HFM_NOPIN,	//HFGPIO_F_SLEEP_RQ
-	HFM_NOPIN,	//HFGPIO_F_SLEEP_ON
-	
-	HFM_NOPIN, //HF_M_PIN(18),	//HFGPIO_F_WPS
-	HFM_NOPIN,		//HFGPIO_F_RESERVE1
-	HFM_NOPIN,		//HFGPIO_F_RESERVE2
-	HFM_NOPIN,		//HFGPIO_F_RESERVE3
-	HFM_NOPIN,		//HFGPIO_F_RESERVE4
-	HFM_NOPIN,		//HFGPIO_F_RESERVE5
-	
-	HF_M_PIN(12),	//	buzzer
-	HF_M_PIN(11),	//	relay
-	HF_M_PIN(18),	//	switch/button
+	HFM_NOPIN,
+	HFM_PIN1,
+	HFM_PIN9,
+	HFM_PIN45,
+	HFM_PIN47,
+	HFM_PIN41,
+	HFM_PIN39,
+	HFM_PIN25,
+	HFM_PIN18,
+	HFM_PIN12,
+	HFM_PIN11
 };
-#elif defined(__HFEASY_PLUG__)
-static int module_type = HFM_TYPE_LPB100;
-const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
+
+int gpio_lpb100[49] = 
 {
-	HF_M_PIN(2),	//HFGPIO_F_JTAG_TCK
+	HFM_NOPIN,
+	HFM_PIN1,
+	HFM_PIN2,
+	HFM_PIN3,
+	HFM_PIN4,
+	HFM_PIN5,
+	HFM_PIN6,
+	HFM_PIN7,
+	HFM_PIN8,
+	HFM_PIN9,
+	HFM_PIN10,
+	HFM_PIN11,
+	HFM_PIN12,
+	HFM_PIN13,
+	HFM_PIN14,
+	HFM_PIN15,
+	HFM_PIN16,
+	HFM_PIN17,
+	HFM_PIN18,
+	HFM_PIN19,
+	HFM_PIN20,
+	HFM_PIN21,
+	HFM_PIN22,
+	HFM_PIN23,
+	HFM_PIN24,
+	HFM_PIN25,
+	HFM_PIN26,
+	HFM_PIN27,
+	HFM_PIN28,
+	HFM_PIN29,
+	HFM_PIN30,
+	HFM_PIN31,
+	HFM_PIN32,
+	HFM_PIN33,
+	HFM_PIN34,
+	HFM_PIN35,
+	HFM_PIN36,
+	HFM_PIN37,
+	HFM_PIN38,
+	HFM_PIN39,
+	HFM_PIN40,
+	HFM_PIN41,
+	HFM_PIN42,
+	HFM_PIN43,
+	HFM_PIN44,
+	HFM_PIN45,
+	HFM_PIN46,
+	HFM_PIN47,
+	HFM_PIN48,
+};
+
+
+int *gpio_module_types[5] = {
+	gpio_lpb100,
+	NULL,
+	NULL,
+	NULL,
+	gpio_lpt100f,
+};
+
+int *gpio = NULL;
+
+int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
+{
+	HFM_NOPIN,	//HFGPIO_F_JTAG_TCK
 	HFM_NOPIN,	//HFGPIO_F_JTAG_TDO
 	HFM_NOPIN,	//HFGPIO_F_JTAG_TDI
-	HF_M_PIN(5),	//HFGPIO_F_JTAG_TMS
+	HFM_NOPIN,	//HFGPIO_F_JTAG_TMS
 	HFM_NOPIN,		//HFGPIO_F_USBDP
 	HFM_NOPIN,		//HFGPIO_F_USBDM
 	HF_M_PIN(39),	//HFGPIO_F_UART0_TX
-	HF_M_PIN(40),	//HFGPIO_F_UART0_RTS
+	HFM_NOPIN,	//HFGPIO_F_UART0_RTS
 	HF_M_PIN(41),	//HFGPIO_F_UART0_RX
-	HF_M_PIN(42),	//HFGPIO_F_UART0_CTS
+	HFM_NOPIN,	//HFGPIO_F_UART0_CTS
 	
 	HF_M_PIN(27),	//HFGPIO_F_SPI_MISO
 	HF_M_PIN(28),	//HFGPIO_F_SPI_CLK
@@ -108,65 +138,31 @@ const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
 	HFM_NOPIN,		//HFGPIO_F_RESERVE4
 	HFM_NOPIN,		//HFGPIO_F_RESERVE5
 	
-	HF_M_PIN(43),	// led
-	HF_M_PIN(44),	// relay
-	HF_M_PIN(30),	// switch/button
+	HFM_NOPIN,		/* led wifi */
+	HFM_NOPIN,		/* relay */
+	HFM_NOPIN,		/* push button */
+	HFM_NOPIN,		/* toggle button */
+	HFM_NOPIN,		/* button up */
+	HFM_NOPIN,		/* button dw */
+	HFM_NOPIN,		/* buzzer */
+	HFM_NOPIN,		/* i2c ck */
+	HFM_NOPIN,		/* i2c dt */
 };
-#elif defined(__HFEASY_DIMMER__)
-#ifdef __LPT100F__
-static int module_type = HFM_TYPE_LPT100F;
-#else
-static int module_type = HFM_TYPE_LPT100;
-#endif
-const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE] =
-{
-	HF_M_PIN(2),	//HFGPIO_F_JTAG_TCK
-	HF_M_PIN(3),	//HFGPIO_F_JTAG_TDO
-	HF_M_PIN(4),	//HFGPIO_F_JTAG_TDI
-	HF_M_PIN(5),	//HFGPIO_F_JTAG_TMS
-	HFM_NOPIN,		//HFGPIO_F_USBDP
-	HFM_NOPIN,		//HFGPIO_F_USBDM
-	HFM_NOPIN, //HF_M_PIN(39),	//HFGPIO_F_UART0_TX
-	HF_M_PIN(40),	//HFGPIO_F_UART0_RTS
-	HF_M_PIN(41),	//HFGPIO_F_UART0_RX
-	HF_M_PIN(42),	//HFGPIO_F_UART0_CTS
-	
-	HF_M_PIN(27),	//HFGPIO_F_SPI_MISO
-	HF_M_PIN(28),	//HFGPIO_F_SPI_CLK
-	HF_M_PIN(29),	//HFGPIO_F_SPI_CS
-	HF_M_PIN(30),	//HFGPIO_F_SPI_MOSI
-	
-	HFM_NOPIN,	//HFGPIO_F_UART1_TX,
-	HFM_NOPIN,	//HFGPIO_F_UART1_RTS,
-	HFM_NOPIN,	//HFGPIO_F_UART1_RX,
-	HFM_NOPIN,	//HFGPIO_F_UART1_CTS,
-	
-	HFM_NOPIN, //HF_M_PIN(11),	//HFGPIO_F_NLINK
-	HFM_NOPIN, //HF_M_PIN(12),	//HFGPIO_F_NREADY
-	HFM_NOPIN, //HF_M_PIN(45),	//HFGPIO_F_NRELOAD
-	HFM_NOPIN,	//HFGPIO_F_SLEEP_RQ
-	HFM_NOPIN,	//HFGPIO_F_SLEEP_ON
-	
-	HFM_NOPIN, //HF_M_PIN(18),	//HFGPIO_F_WPS
-	HFM_NOPIN,		//HFGPIO_F_RESERVE1
-	HFM_NOPIN,		//HFGPIO_F_RESERVE2
-	HFM_NOPIN,		//HFGPIO_F_RESERVE3
-	HFM_NOPIN,		//HFGPIO_F_RESERVE4
-	HFM_NOPIN,		//HFGPIO_F_RESERVE5
-	
-	HF_M_PIN(39),	//  wifi led
-	HF_M_PIN(12),	//	down
-	HF_M_PIN(11),	//	on
-	HF_M_PIN(23),	//	scl
-	HF_M_PIN(20),	//	sda
-	HF_M_PIN(18),	//	up
-};
-#else
-#error "Device not supported!"
-#endif
+
+
+int *gpio_func = &hf_gpio_fid_to_pid_map_table[HFGPIO_F_USER_DEFINE];
+
 
 static hftimer_handle_t debounce_timer, recovery_timer;
 static volatile uint8_t key_counter = 0, recovery_counter = 0;
+
+
+
+int *gpio_pin(int nr)
+{
+	return &gpio_func[nr];
+}
+
 
 inline int USER_FUNC gpio_get_state(int fid)
 {
@@ -174,7 +170,7 @@ inline int USER_FUNC gpio_get_state(int fid)
 }
 
 
-#if defined(__HFEASY_DIMMER__)
+//#if defined(__HFEASY_DIMMER__)
 int USER_FUNC gpio_i2c_bitbang(uint8_t d)
 {
 	int i, nack;
@@ -324,43 +320,8 @@ void USER_FUNC gpio_set_dimmer(uint8_t lvl, uint8_t publish, uint8_t source)
 	}
 }
 
-#endif
+//#endif
 
-void USER_FUNC gpio_set_relay(uint8_t action, uint8_t publish, uint8_t source)
-{
-	struct hfeasy_state *state = config_get_state();
-	char *val;
-	int changed = (action != state->relay_state);
-	
-	switch(action) {
-		default:
-		case RELAY_OFF:
-			/* off */
-			state->relay_state = 0;
-			break;
-		case RELAY_ON:
-			/* on */
-			state->relay_state = 1;
-			break;
-		case RELAY_TOGGLE:
-			/* toggle */
-			state->relay_state ^= 1;
-			break;
-	}
-	
-	state->relay_modifier = source | ((publish & 1) << 6) | ((action & 3) << 4);
-
-	/* set gpio */
-	if (state->relay_state) {
-		hfgpio_fset_out_high(GPIO_RELAY);
-		val = state->cfg.mqtt_on_value;
-	} else {
-		hfgpio_fset_out_low(GPIO_RELAY);
-		val = state->cfg.mqtt_off_value;
-	}
-	if (publish && changed)
-		mqttcli_publish(val);
-}
 
 static void USER_FUNC switch_state_page(char *url, char *rsp)
 {
@@ -369,13 +330,13 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 	int ret;
 	int dimmer_val = 0;
 
-#ifdef HAS_BUZZER
-	ret = httpd_arg_find(url, "tone", val);
-	if (ret == 1) {
-		buzzer_play(atoi(val));
-		u_printf("playing tone %d\r\n", atoi(val));
+	if (gpio_func[GPIO_BUZZER] != HFM_NOPIN) {
+		ret = httpd_arg_find(url, "tone", val);
+		if (ret == 1) {
+			buzzer_play(atoi(val));
+			u_printf("playing tone %d\r\n", atoi(val));
+		}
 	}
-#endif
 
 	ret = httpd_arg_find(url, "sw", val);
 	if (ret != 1) {
@@ -385,33 +346,35 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 		dimmer_val = atoi(val);
 	}
 
-#if defined(__HFEASY_DIMMER__)
-	if (dimmer_val != -1)
-		gpio_set_dimmer((uint8_t) dimmer_val, 1, RELAY_SRC_HTTP);
 	
-	sprintf(rsp, "{ \"set\": \"%d\", \"relay_status\": \"%d\", \"level\": \"%d\" }", dimmer_val, state->relay_state, state->dimmer_level);
-	
-#else
+	if (gpio_func[GPIO_I2C_SCL] != HFM_NOPIN) {
+		if (dimmer_val != -1)
+			gpio_set_dimmer((uint8_t) dimmer_val, 1, RELAY_SRC_HTTP);
+		
+		sprintf(rsp, "{ \"set\": \"%d\", \"relay_status\": \"%d\", \"level\": \"%d\" }", dimmer_val, state->relay_state, state->dimmer_level);
+	}
+	else if (gpio_func[GPIO_RELAY] != HFM_NOPIN)
+	{
 
-	/* set relay */
-	if (strcmp(val, "1") == 0)
-		gpio_set_relay(1, 1, RELAY_SRC_HTTP);
-	else if (strcmp(val, "0") == 0)
-		gpio_set_relay(0, 1, RELAY_SRC_HTTP);
+		/* set relay */
+		if (strcmp(val, "1") == 0)
+			gpio_set_relay(1, 1, RELAY_SRC_HTTP);
+		else if (strcmp(val, "0") == 0)
+			gpio_set_relay(0, 1, RELAY_SRC_HTTP);
 
-	if (state->cfg.wifi_led & LED_CONFIG_HTTP)
-		led_ctrl("n1f"); /* got data = 1 blink */
-	
-	sprintf(rsp, "{ \"set\": \"%s\", \"relay_status\": \"%d\" }", val, state->relay_state);
+		if (state->cfg.wifi_led & LED_CONFIG_HTTP)
+			led_ctrl("n1f"); /* got data = 1 blink */
+		
+		sprintf(rsp, "{ \"set\": \"%s\", \"relay_status\": \"%d\" }", val, state->relay_state);
 
-/*	sprintf(rsp, "<html><head><title>SWITCH STATE</title></head>" \
-							 "<body>SWITCH STATE WEB PAGE<br>" \
-							 "ret=%d, sw='%s' relay_state=%d" \
-							 "</body></html>", ret, val, state->relay_state);
-*/
-	//u_printf("ret=%d, sw='%s' relay_state=%d\r\n", ret, val, state->relay_state);
+	/*	sprintf(rsp, "<html><head><title>SWITCH STATE</title></head>" \
+								 "<body>SWITCH STATE WEB PAGE<br>" \
+								 "ret=%d, sw='%s' relay_state=%d" \
+								 "</body></html>", ret, val, state->relay_state);
+	*/
+		//u_printf("ret=%d, sw='%s' relay_state=%d\r\n", ret, val, state->relay_state);
 
-#endif
+	}
 	
 }
 
@@ -455,56 +418,66 @@ static void USER_FUNC recovery_timer_handler(hftimer_handle_t timer)
 	recovery_counter = 0;
 }
 
-#if defined(__HFEASY_MODULE__)
 static int prev_sw_state;
-#endif
 
 static void USER_FUNC debounce_timer_handler(hftimer_handle_t timer)
 {
-#if (defined (__HFEASY_PLUG__) || defined(__HFEASY_DIMMER__))
-	if (gpio_get_state(GPIO_SWITCH) == 0) {
+	if (gpio_func[GPIO_SWITCH_PUSH] != HFM_NOPIN) {
+		if (gpio_get_state(GPIO_SWITCH_PUSH) == 0) {
+			if (recovery_counter++ == 0) {
+				hftimer_start(recovery_timer);
+			}
+			hftimer_start(timer);
+		} else {
+			hftimer_stop(recovery_timer);
+			recovery_counter = 0;
+			key_counter = 0;
+		}
+	}
+	
+	if (gpio_func[GPIO_SWITCH_TOGGLE] != HFM_NOPIN) {
+		key_counter = 0;
+		
+		int sw_state = hfgpio_fpin_is_high(GPIO_SWITCH_TOGGLE) ? 1 : 0;
+		if (prev_sw_state == sw_state)
+			return;
+			
+		gpio_set_relay(RELAY_TOGGLE, 1, RELAY_SRC_SWITCH);
+		prev_sw_state = sw_state;
+		
 		if (recovery_counter++ == 0) {
 			hftimer_start(recovery_timer);
 		}
-		hftimer_start(timer);
-	} else {
-		hftimer_stop(recovery_timer);
-		recovery_counter = 0;
-		key_counter = 0;
 	}
-#else 
-	key_counter = 0;
-	
-	int sw_state = hfgpio_fpin_is_high(GPIO_SWITCH) ? 1 : 0;
-	if (prev_sw_state == sw_state)
-		return;
-		
-	gpio_set_relay(RELAY_TOGGLE, 1, RELAY_SRC_SWITCH);
-	prev_sw_state = sw_state;
-	
-	if (recovery_counter++ == 0) {
-		hftimer_start(recovery_timer);
-	}
-#endif
 }
 
 
-static void USER_FUNC switch_irqhandler(uint32_t arg1, uint32_t arg2)
+static void USER_FUNC switch_irqhandler_toggle(uint32_t arg1, uint32_t arg2)
 {
 	if (key_counter == 0) {
 		key_counter++;
-#if defined(__HFEASY_PLUG__)
-		gpio_set_relay(RELAY_TOGGLE, 1, RELAY_SRC_SWITCH);
-#endif
-#if defined(__HFEASY_DIMMER__)
-		gpio_set_dimmer(0xfe, 1, RELAY_SRC_SWITCH);
-#endif
+	}
+	hftimer_start(debounce_timer);
+}
+
+static void USER_FUNC switch_irqhandler_push(uint32_t arg1, uint32_t arg2)
+{
+	if (key_counter == 0) {
+		key_counter++;
+		
+		if (gpio_func[GPIO_RELAY] != HFM_NOPIN)
+			gpio_set_relay(RELAY_TOGGLE, 1, RELAY_SRC_SWITCH);
+
+		/* dimmer, no relay */
+		if (gpio_func[GPIO_I2C_SCL] != HFM_NOPIN) {
+			gpio_set_dimmer(0xfe, 1, RELAY_SRC_SWITCH);
+		}
 	}
 	hftimer_start(debounce_timer);
 }
 
 
-#if defined(__HFEASY_DIMMER__)
+//#if defined(__HFEASY_DIMMER__)
 #define MAX_LIGHT_LEVEL 0x80
 
 static int is_first_sw = 1;
@@ -568,13 +541,35 @@ static void USER_FUNC switch_dn_irqhandler(uint32_t arg1, uint32_t arg2)
 	hftimer_change_period(dimmer_kdn_timer, 30);
 }
 
-#endif
+//#endif
 
+
+extern const int gpio_default_config[4][10];
 
 
 void USER_FUNC gpio_init(void)
 {
 	struct hfeasy_state *state = config_get_state();
+	int module_type, i, j;
+
+	module_type = state->cfg.gpio_config[9];
+
+	gpio = gpio_module_types[module_type];
+	if (gpio == NULL) {
+		HF_Debug(DEBUG_ERROR,"error: gpio not available for this module\n");
+		while(1)
+			msleep(1000);
+	}
+
+	/* init pin mapping */
+	for (i = 0; i < 9; i++) {
+		gpio_func[i] = gpio[state->cfg.gpio_config[i]];
+		if (gpio_func[i] == HFM_NOPIN)
+			continue;
+		for (j = 0; j < HFGPIO_F_USER_DEFINE; j++)
+			if (hf_gpio_fid_to_pid_map_table[j] == gpio_func[i])
+				hf_gpio_fid_to_pid_map_table[j] = HFM_NOPIN;
+	}
 
 	/* init gpio */
 	if (hfgpio_fmap_check(module_type) != 0) {
@@ -582,53 +577,51 @@ void USER_FUNC gpio_init(void)
 		while(1)
 			msleep(1000);
 	}
-
-#if defined(HAS_WIFI_LED)
-	/* status led */
-	hfgpio_configure_fpin(GPIO_LED, HFM_IO_OUTPUT_1);
-	hfgpio_fset_out_low(GPIO_LED);
-#endif
-
-#if defined(HAS_RELAY)
-	/* relay control pin */
-	hfgpio_configure_fpin(GPIO_RELAY, HFM_IO_OUTPUT_0);
-#endif
-
-#if defined(__HFEASY_MODULE__)
-	prev_sw_state = gpio_get_state(GPIO_SWITCH);
-	/* on/off button */
-	if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH,
-				HFM_IO_TYPE_INPUT | HFPIO_IT_EDGE | HFPIO_PULLUP,
-				switch_irqhandler, 1) != HF_SUCCESS)
-		u_printf("failed to add switch interrupt\n");
-#endif
 	
-#if (defined(__HFEASY_PLUG__) || defined(__HFEASY_DIMMER__))
-	/* on/off toggle button */
-	if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH,
-				HFM_IO_TYPE_INPUT | HFPIO_IT_FALL_EDGE | HFPIO_PULLUP,
-				switch_irqhandler, 1) != HF_SUCCESS)
-		u_printf("failed to add switch interrupt\n");	
-#endif
+	led_init();
+	relay_init();
 	
-#if defined(__HFEASY_DIMMER__)
-	/* up/down buttons */
-	if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH_UP,
-				HFM_IO_TYPE_INPUT | HFPIO_IT_FALL_EDGE | HFPIO_PULLUP,
-				switch_up_irqhandler, 1) != HF_SUCCESS)
-		u_printf("failed to add key up interrupt\n");
+	
+	if (gpio_func[GPIO_SWITCH_TOGGLE] != HFM_NOPIN) {
+		prev_sw_state = gpio_get_state(GPIO_SWITCH_TOGGLE);
+		/* on/off button */
+		if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH_TOGGLE,
+					HFM_IO_TYPE_INPUT | HFPIO_IT_EDGE | HFPIO_PULLUP,
+					switch_irqhandler_toggle, 1) != HF_SUCCESS)
+			u_printf("failed to add switch interrupt\n");
+	}
 
-	if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH_DN,
-				HFM_IO_TYPE_INPUT | HFPIO_IT_FALL_EDGE | HFPIO_PULLUP,
-				switch_dn_irqhandler, 1) != HF_SUCCESS)
-		u_printf("failed to add key down interrupt\n");
+	if (gpio_func[GPIO_SWITCH_PUSH] != HFM_NOPIN) {
+		/* on/off push button */
+		if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH_PUSH,
+					HFM_IO_TYPE_INPUT | HFPIO_IT_FALL_EDGE | HFPIO_PULLUP,
+					switch_irqhandler_push, 1) != HF_SUCCESS)
+			u_printf("failed to add switch interrupt\n");	
+	}
 	
-	/* I2C pins */
-	hfgpio_configure_fpin(GPIO_I2C_SCL, HFPIO_DEFAULT | HFM_IO_TYPE_INPUT);
-	hfgpio_configure_fpin(GPIO_I2C_SDA, HFPIO_DEFAULT | HFM_IO_TYPE_INPUT);
+	if (gpio_func[GPIO_SWITCH_UP] != HFM_NOPIN) {
+		/* up button */
+		if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH_UP,
+					HFM_IO_TYPE_INPUT | HFPIO_IT_FALL_EDGE | HFPIO_PULLUP,
+					switch_up_irqhandler, 1) != HF_SUCCESS)
+			u_printf("failed to add key up interrupt\n");
+	}
+
+	if (gpio_func[GPIO_SWITCH_DN] != HFM_NOPIN) {
+		/* down button */
+		if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH_DN,
+					HFM_IO_TYPE_INPUT | HFPIO_IT_FALL_EDGE | HFPIO_PULLUP,
+					switch_dn_irqhandler, 1) != HF_SUCCESS)
+			u_printf("failed to add key down interrupt\n");
+	}	
 	
-	state->dimmer_level = 0x80;
-#endif
+	if (gpio_func[GPIO_I2C_SCL] != HFM_NOPIN && gpio_func[GPIO_I2C_SDA] != HFM_NOPIN) {
+		/* I2C pins */
+		hfgpio_configure_fpin(GPIO_I2C_SCL, HFPIO_DEFAULT | HFM_IO_TYPE_INPUT);
+		hfgpio_configure_fpin(GPIO_I2C_SDA, HFPIO_DEFAULT | HFM_IO_TYPE_INPUT);
+		
+		state->dimmer_level = 0x80;
+	}
 	
 	debounce_timer = hftimer_create("debouncer", 50, false, HFTIMER_ID_DEBOUNCE, debounce_timer_handler, 0);
 	recovery_timer = hftimer_create("recovery", 3000, false, HFTIMER_ID_RECOVERY, recovery_timer_handler, 0);

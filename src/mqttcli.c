@@ -71,18 +71,21 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 
 		publish = strcmp(cfg->mqtt_sub_topic, cfg->mqtt_pub_topic);
 
-#if defined(__HFEASY_DIMMER__)
-		int lvl = atoi(msg);
-		gpio_set_dimmer(lvl, publish, RELAY_SRC_MQTT);
-#else
-		if (strcmp(cfg->mqtt_on_value, msg) == 0) {
-			if (state->relay_state != 1)
-				gpio_set_relay(1, publish, RELAY_SRC_MQTT);
-		} else if (strcmp(cfg->mqtt_off_value, msg) == 0) {
-			if (state->relay_state != 0)
-				gpio_set_relay(0, publish, RELAY_SRC_MQTT);
+		if (*gpio_pin(GPIO_I2C_SCL) != HFM_NOPIN) {
+			int lvl = atoi(msg);
+			gpio_set_dimmer(lvl, publish, RELAY_SRC_MQTT);
 		}
-#endif
+
+		if (*gpio_pin(GPIO_RELAY) != HFM_NOPIN) {
+			if (strcmp(cfg->mqtt_on_value, msg) == 0) {
+				if (state->relay_state != 1)
+					gpio_set_relay(1, publish, RELAY_SRC_MQTT);
+			} else if (strcmp(cfg->mqtt_off_value, msg) == 0) {
+				if (state->relay_state != 0)
+					gpio_set_relay(0, publish, RELAY_SRC_MQTT);
+			}
+		}
+
 	}
 	hfmem_free(topic_name);
 	hfmem_free(msg);

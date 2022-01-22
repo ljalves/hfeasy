@@ -27,6 +27,7 @@ SOFTWARE.
 #include "hfeasy.h"
 
 void USER_FUNC buzzer_init(void);
+void USER_FUNC buzzer_deinit(void);
 void USER_FUNC buzzer_play(uint8_t tone);
 
 #endif

@@ -23,7 +23,7 @@ SOFTWARE.
 
 #include "hfeasy.h"
 
-#define CONFIG_MAGIC_VER1  0xd5
+#define CONFIG_MAGIC_VER1  0xd4
 #define CONFIG_OFFSET      0x00
 #define CONFIG_SIZE        (sizeof(struct hfeasy_config))
 
@@ -31,6 +31,27 @@ struct hfeasy_state state;
 static hftimer_handle_t reset_timer;
 
 void USER_FUNC get_module_name(char *buf);
+
+
+
+
+/* wifi_led, relay, but_push, but_togg, but_up, but_dn, buzz, i2c_ck, i2c_dt */
+const int gpio_default_config[4][10]	= 
+{
+	/* wall socket module */
+	{	0, 10, 0, 8, 0, 0, 9, 0, 0, HFM_TYPE_LPT100F},
+	
+	/* plug */
+	{	43, 44, 30, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB100},
+	
+	/* us dimmer */
+	{	39, 0, 11, 0, 18, 12, 0, 23, 20, HFM_TYPE_LPT100F },
+	
+	/* us wall switch */
+	{	10, 8, 9, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPT100F },
+};
+
+
 
 static void USER_FUNC reboot_timer_handler(hftimer_handle_t timer)
 {
@@ -60,7 +81,6 @@ static const char *config_page =
 	"</table><input type=\"submit\" value=\"Commit values\"></form>"\
 	"<hr><form action=\"/config\" method=\"GET\"><input type=\"submit\" value=\"Save to flash and reboot\" name=\"save\"></form>"\
 	"</body></html>";
-
 
 static void USER_FUNC httpd_page_config(char *url, char *rsp)
 {
@@ -189,6 +209,24 @@ static void USER_FUNC httpd_page_config_mqtt(char *url, char *rsp)
 }
 
 
+static const char *config_page_gpio =
+	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
+	"<h1>HFeasy GPIO config page</h1><hr>"\
+	"<a href=\"config\">Global config</a>"\
+	"<form action=\"/config_gpio\" method=\"GET\"><table>"\
+	"<TH colspan=\"2\">GPIO config"\
+	"</table><input type=\"submit\" value=\"Commit values\"></form>"\
+	"<hr><form action=\"/config\" method=\"GET\"><input type=\"submit\" value=\"Save to flash and reboot\" name=\"save\"></form>"\
+	"</body></html>";
+
+static void USER_FUNC httpd_page_config_gpio(char *url, char *rsp)
+{
+	sprintf(rsp, config_page_gpio, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR);
+}
+
+
+
+
 static void get_reset_reason(uint32_t r, char *s)
 {
 	s[0] = '\0';
@@ -291,7 +329,7 @@ static void USER_FUNC httpd_page_status(char *url, char *rsp)
 	sprintf(rsp, status_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
 					HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
 					state.reset_reason, rr, hfsys_get_memory(), uptime,
-					gpio_get_state(GPIO_SWITCH) ? "High" : "Low",
+					gpio_get_state(GPIO_SWITCH_PUSH) ? "High" : "Low",
 					state.relay_state ? "Closed(On)" : "Open(Off)",
 					relay_change_src[state.relay_modifier & 3],
 					(state.relay_modifier >> 6) & 1, (state.relay_modifier >> 4) & 3,
@@ -495,6 +533,7 @@ void USER_FUNC config_init(void)
 	/* register webpages */
 	httpd_add_page("/config", httpd_page_config);
 	httpd_add_page("/config_mqtt", httpd_page_config_mqtt);
+	httpd_add_page("/config_gpio", httpd_page_config_gpio);
 	httpd_add_page("/status", httpd_page_status);
 	httpd_add_page("/log", httpd_page_log);
 }

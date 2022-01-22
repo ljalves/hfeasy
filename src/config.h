@@ -48,6 +48,10 @@ struct hfeasy_config {
 	char      http_auth;
 	uint8_t   wifi_led;
 
+	/* gpio */
+	int				device;
+	int				gpio_config[10];
+	
 	/* timers */
 	time_t    countdown[2];
 	
@@ -65,9 +69,8 @@ struct hfeasy_state {
 	
 	uint8_t	relay_state;
 	uint8_t relay_modifier;
-#if defined(__HFEASY_DIMMER__)
+
 	uint8_t dimmer_level;
-#endif
 	
 	char mac_addr[6];
 	char mac_addr_s[6*2+1];
@@ -76,6 +79,17 @@ struct hfeasy_state {
 	
 	struct hfeasy_config cfg;
 };
+
+
+enum {
+	DEVICE_MODULE = 0,
+	DEVICE_PLUG,
+	DEVICE_USDIMMER,
+	DEVICE_USWALLSW,
+	DEVICE_CUSTOM
+};
+
+
 
 void USER_FUNC config_init(void);
 void USER_FUNC config_save(void);

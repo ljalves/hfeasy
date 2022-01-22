@@ -15,27 +15,11 @@
 #include "timer.h"
 #include "config.h"
 #include "led.h"
+#include "relay.h"
 
 
 #define HFEASY_VERSION_MAJOR	0
-#define HFEASY_VERSION_MINOR	7
-
-
-#if defined (__HFEASY_PLUG__)
-#define HAS_WIFI_LED
-#define HAS_PUSH_BUTTON
-#endif
-
-#if defined (__HFEASY_MODULE__)
-#define HAS_BUZZER
-#define HAS_TOGGLE_BUTTON
-#endif
-
-#if defined(__HFEASY_DIMMER__)
-#define HAS_WIFI_LED
-#define HAS_PUSH_BUTTON
-#endif
-
+#define HFEASY_VERSION_MINOR	8
 
 
 enum {

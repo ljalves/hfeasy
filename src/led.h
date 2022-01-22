@@ -23,6 +23,7 @@ enum {
 };
 
 void USER_FUNC led_init(void);
+void USER_FUNC led_deinit(void);
 void USER_FUNC led_ctrl(char *a);
 
 #endif

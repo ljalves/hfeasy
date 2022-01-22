@@ -24,7 +24,6 @@ SOFTWARE.
 
 #include "hfeasy.h"
 
-#ifdef HAS_BUZZER
 
 #define NOTE_B0  31
 #define NOTE_C1  33
@@ -567,10 +566,15 @@ void USER_FUNC buzzer_play(uint8_t tone)
 
 void USER_FUNC buzzer_init(void)
 {
-	hfgpio_configure_fpin(GPIO_BUZZER, HFM_IO_OUTPUT_0);
-	buzzer_timer = hftimer_create("buzzer", 10, false, HFTIMER_ID_BUZZER, buzzer_timer_handler, 0);
+	if (*gpio_pin(GPIO_BUZZER) != HFM_NOPIN) {
+		hfgpio_configure_fpin(GPIO_BUZZER, HFM_IO_OUTPUT_0);
+		buzzer_timer = hftimer_create("buzzer", 10, false, HFTIMER_ID_BUZZER, buzzer_timer_handler, 0);
+	}
 }
-#else
-void USER_FUNC buzzer_play(uint8_t tone) {}
-void USER_FUNC buzzer_init(void) {}
-#endif
+
+void USER_FUNC buzzer_deinit(void)
+{
+	hfgpio_configure_fpin(GPIO_BUZZER, HFM_IO_TYPE_INPUT);
+	hftimer_stop(buzzer_timer);
+	hftimer_delete(buzzer_timer);
+}

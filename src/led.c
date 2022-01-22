@@ -23,7 +23,6 @@ SOFTWARE.
 
 #include "hfeasy.h"
 
-#ifdef HAS_WIFI_LED
 
 static hftimer_handle_t led_timer;
 static char led_actions[30];
@@ -32,9 +31,9 @@ static uint8_t led_idx = 0;
 static inline void USER_FUNC set_led(uint8_t st)
 {
 	if (st)
-		hfgpio_fset_out_low(GPIO_LED);
+		hfgpio_fset_out_low(GPIO_LED_WIFI);
 	else
-		hfgpio_fset_out_high(GPIO_LED);
+		hfgpio_fset_out_high(GPIO_LED_WIFI);
 }
 
 
@@ -109,16 +108,19 @@ void USER_FUNC led_ctrl(char *a)
 
 void USER_FUNC led_init(void)
 {
+	if (*gpio_pin(GPIO_LED_WIFI) == HFM_NOPIN)
+		return;
+
+	hfgpio_configure_fpin(GPIO_LED_WIFI, HFM_IO_OUTPUT_0);
+	hfgpio_fset_out_low(GPIO_LED_WIFI);
+	
 	led_idx = 0;
 	strcpy(led_actions, "");
 	led_timer = hftimer_create("led", 1, false, HFTIMER_ID_LED, led_timer_handler, 0);
 }
 
-#else
-void USER_FUNC led_ctrl(char *a)
+void USER_FUNC led_deinit(void)
 {
+	hfgpio_configure_fpin(GPIO_LED_WIFI, HFM_IO_TYPE_INPUT);
+	hftimer_delete(led_timer);
 }
-void USER_FUNC led_init(void)
-{
-}
-#endif
