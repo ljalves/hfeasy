@@ -23,7 +23,7 @@ SOFTWARE.
 
 #include "hfeasy.h"
 
-#define CONFIG_MAGIC_VER1  0xd4
+#define CONFIG_MAGIC_VER1  0xd3
 #define CONFIG_OFFSET      0x00
 #define CONFIG_SIZE        (sizeof(struct hfeasy_config))
 
@@ -64,6 +64,26 @@ void USER_FUNC reboot(void)
 	hftimer_start(reset_timer);
 }
 
+static const char *config_page_save =
+	"<!DOCTYPE html><html><head>"\
+	"<meta http-equiv=\"refresh\" content=\"5;url=/config\" />"\
+	"<title>HFeasy config v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
+	"Saving config to flash. Please wait...</body></html>";
+
+static void USER_FUNC httpd_page_save(char *url, char *rsp)
+{
+	char tmp[50];
+	int ret;
+	
+	ret = httpd_arg_find(url, "save", tmp);
+	if (ret > 0) {
+		config_save();
+		reboot();
+	}
+	sprintf(rsp, config_page_save, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR);
+}
+
+
 static const char *config_page =
 	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
 	"<h1>HFeasy config page</h1><hr>"\
@@ -72,6 +92,7 @@ static const char *config_page =
 	"<td><a href=\"config_device\">Device</a>"\
 	"<td><a href=\"config_gpio\">GPIO</a>"\
 	"<td><a href=\"status\">Status</a>"\
+	"<td><a href=\"iweb.html\">Upgrade</a>"\
 	"</table>"\
 	"<form action=\"/config\" method=\"GET\"><table>"\
 	"<th colspan=\"2\">Module"\
@@ -81,11 +102,14 @@ static const char *config_page =
 	"<option value=\"0\"%s>Off</option>"\
 	"<option value=\"1\"%s>MQTT</option>"\
 	"<option value=\"2\"%s>HTTP</option>"\
-	"<option value=\"3\"%s>All</option>"\
-	"<option value=\"4\"%s>Find</option>"\
+	"<option value=\"3\"%s>MQTT+HTTP</option>"\
+	"<option value=\"4\"%s>Relay</option>"\
+	"<option value=\"5\"%s>MQTT topic</option>"\
+	"<option value=\"6\"%s>Find</option>"\
 	"</select>"\
+	"<tr><td>Power on state<td><input type=\"text\" name=\"pwron\" value=\"%d\"> (relay: 0=off, >0=on; dimmer: level)"\
 	"</table><input type=\"submit\" value=\"Apply\"></form>"\
-	"<hr><form action=\"/config\" method=\"GET\"><input type=\"submit\" value=\"Save changes to flash and reboot\" name=\"save\"></form>"\
+	"<hr><form action=\"/save\" method=\"GET\"><input type=\"submit\" value=\"Save changes to flash and reboot\" name=\"save\"></form>"\
 	"</body></html>";
 
 static void USER_FUNC httpd_page_config(char *url, char *rsp)
@@ -109,14 +133,13 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 	ret = httpd_arg_find(url, "wifi_led", tmp);
 	if (ret > 0) {
 		state.cfg.wifi_led = atoi(tmp);
-		if (state.cfg.wifi_led > 4)
+		if (state.cfg.wifi_led >= LED_CONFIG_END)
 			state.cfg.wifi_led = 0;
 	}
 	
-	ret = httpd_arg_find(url, "save", tmp);
+	ret = httpd_arg_find(url, "pwron", tmp);
 	if (ret > 0) {
-		config_save();
-		reboot();
+		state.cfg.pwron_state = atoi(tmp);
 	}
 	
 	sprintf(rsp, config_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
@@ -125,7 +148,10 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 		state.cfg.wifi_led == 1 ? "selected" : "",
 		state.cfg.wifi_led == 2 ? "selected" : "",
 		state.cfg.wifi_led == 3 ? "selected" : "",
-		state.cfg.wifi_led == 4 ? "selected" : ""
+		state.cfg.wifi_led == 4 ? "selected" : "",
+		state.cfg.wifi_led == 5 ? "selected" : "",
+		state.cfg.wifi_led == 6 ? "selected" : "",
+		state.cfg.pwron_state
 	);
 
 	if (state.cfg.wifi_led == LED_CONFIG_FIND) {
@@ -148,8 +174,8 @@ static const char *config_page_mqtt =
 	"<TR><TD>Server port (0=disabled)<TD><input type=\"text\" name=\"port\" value=\"%d\">"\
 	"<TR><TD>Username<TD><input type=\"text\" name=\"user\" value=\"%s\">"\
 	"<TR><TD>Password<TD><input type=\"password\" name=\"pass\" value=\"%s\">"\
-	"<TR><TD>Subscribe topic<TD><input type=\"text\" name=\"sub_topic\" value=\"%s\">"\
-	"<TR><TD>Publish topic<TD><input type=\"text\" name=\"pub_topic\" value=\"%s\">"\
+	"<TR><TD>Topic (%%topic%%)<TD><input type=\"text\" name=\"topic\" value=\"%s\">"\
+	"<TR><TD>Full topic<TD><input type=\"text\" name=\"full_topic\" value=\"%s\">"\
 	"<TR><TD>QOS<TD><input type=\"text\" name=\"qos\" value=\"%d\">"\
 	"<TR><TD>ON value<TD><input type=\"text\" name=\"on_val\" value=\"%s\">"\
 	"<TR><TD>OFF value<TD><input type=\"text\" name=\"off_val\" value=\"%s\">"\
@@ -177,13 +203,13 @@ static void USER_FUNC httpd_page_config_mqtt(char *url, char *rsp)
 	if (ret > 0)
 		strcpy(state.cfg.mqtt_server_pass, tmp);
 
-	ret = httpd_arg_find(url, "sub_topic", tmp);
+	ret = httpd_arg_find(url, "topic", tmp);
 	if (ret > 0)
-		strcpy(state.cfg.mqtt_sub_topic, tmp);
+		strcpy(state.cfg.mqtt_topic, tmp);
 		
-	ret = httpd_arg_find(url, "pub_topic", tmp);
+	ret = httpd_arg_find(url, "full_topic", tmp);
 	if (ret > 0)
-		strcpy(state.cfg.mqtt_pub_topic, tmp);
+		strcpy(state.cfg.mqtt_full_topic, tmp);
 
 	ret = httpd_arg_find(url, "qos", tmp);
 	if (ret > 0)
@@ -207,7 +233,7 @@ static void USER_FUNC httpd_page_config_mqtt(char *url, char *rsp)
 	sprintf(rsp, config_page_mqtt, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
 					state.cfg.mqtt_server_hostname, state.cfg.mqtt_server_port,
 					state.cfg.mqtt_server_user, state.cfg.mqtt_server_pass,
-					state.cfg.mqtt_sub_topic, state.cfg.mqtt_pub_topic, state.cfg.mqtt_qos,
+					state.cfg.mqtt_topic, state.cfg.mqtt_full_topic, state.cfg.mqtt_qos,
 					state.cfg.mqtt_on_value, state.cfg.mqtt_off_value);
 
 	u_printf("page_size=%d\r\n", strlen(rsp));
@@ -430,7 +456,7 @@ static const char *status_page =
   "</body></html>";
 
 
-const char *relay_change_src[] = { "HTTP", "MQTT", "TIMER", "SWITCH" };
+const char *relay_change_src[] = { "HTTP", "MQTT", "TIMER", "SWITCH", "SWUP", "SWDOWN", "POWER ON" };
 
 static void USER_FUNC httpd_page_status(char *url, char *rsp)
 {
@@ -704,4 +730,5 @@ void USER_FUNC config_init(void)
 	httpd_add_page("/config_gpio", httpd_page_config_gpio);
 	httpd_add_page("/status", httpd_page_status);
 	httpd_add_page("/log", httpd_page_log);
+	httpd_add_page("/save", httpd_page_save);
 }

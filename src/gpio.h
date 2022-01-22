@@ -17,9 +17,10 @@ enum {
 
 
 void USER_FUNC gpio_init(void);
-void USER_FUNC gpio_set_dimmer(uint8_t lvl, uint8_t publish, uint8_t source);
 int USER_FUNC gpio_get_state(int fid);
-
 int *gpio_pin(int n);
+
+void USER_FUNC gpio_set_dimmer(uint8_t lvl, uint8_t publish, uint8_t source);
+void USER_FUNC dimmer_publish_state(void);
 
 #endif

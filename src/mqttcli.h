@@ -5,6 +5,6 @@
 
 void USER_FUNC mqttcli_init(void);
 void USER_FUNC mqttcli_initcfg(void);
-void USER_FUNC mqttcli_publish(char *value);
+void USER_FUNC mqttcli_publish(char *value, char *sufix);
 
 #endif

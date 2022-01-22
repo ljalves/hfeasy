@@ -271,6 +271,18 @@ int USER_FUNC gpio_i2c_recv(uint8_t addr, uint8_t *data)
 #endif
 
 
+void USER_FUNC dimmer_publish_state(void)
+{
+	struct hfeasy_state *state = config_get_state();
+	char buf[10];
+	uint8_t lvl;
+	
+	lvl = state->dimmer_level;
+	
+	sprintf(buf, "%d", lvl);
+	mqttcli_publish(buf, "dimmer");
+}
+
 void USER_FUNC gpio_set_dimmer(uint8_t lvl, uint8_t publish, uint8_t source)
 {
 	struct hfeasy_state *state = config_get_state();
@@ -294,7 +306,6 @@ void USER_FUNC gpio_set_dimmer(uint8_t lvl, uint8_t publish, uint8_t source)
 		state->relay_state = 1;
 
 	
-	
 	changed = (old_rs != state->relay_state) || ((lvl > 0) && (lvl != state->dimmer_level));
 
 	if (state->relay_state == 0) {
@@ -314,7 +325,7 @@ void USER_FUNC gpio_set_dimmer(uint8_t lvl, uint8_t publish, uint8_t source)
 	
 	if (publish && changed) {
 		sprintf(buf, "%d", lvl);
-		mqttcli_publish(buf);
+		mqttcli_publish(buf, "dimmer");
 	}
 }
 
@@ -625,6 +636,9 @@ void USER_FUNC gpio_init(void)
 		hfgpio_configure_fpin(GPIO_I2C_SDA, HFPIO_DEFAULT | HFM_IO_TYPE_INPUT);
 		
 		state->dimmer_level = 0x80;
+
+		gpio_set_dimmer(state->cfg.pwron_state, 1, RELAY_SRC_POWERON);
+
 	}
 	
 	debounce_timer = hftimer_create("debouncer", 50, false, HFTIMER_ID_DEBOUNCE, debounce_timer_handler, 0);

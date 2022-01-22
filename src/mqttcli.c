@@ -50,12 +50,46 @@ static uint8_t *txbuf; /* should be large enough to hold multiple whole mqtt mes
 static uint8_t *rxbuf; /* should be large enough any whole mqtt message expected to be received */
 
 
+
+int USER_FUNC mqttcli_strsub(char *str, char *what, char *with)
+{
+	char tmp[100], *p, i;
+	p = strstr(str, what);
+	if (p == NULL)
+		return -1;
+
+	i = p-str;
+	memcpy(tmp, str, i);
+	strcpy(tmp + i, with);
+	strcpy(tmp + i + strlen(with), str + i + strlen(what));
+	strcpy(str, tmp);
+	return 0;
+}
+
+void USER_FUNC mqttcli_get_topic(char *topic, char *prefix, char *sufix)
+{
+	struct hfeasy_state *state = config_get_state();
+
+	/* get full topic */
+	strcpy(topic, state->cfg.mqtt_full_topic);
+	
+	/* replace %prefix% */
+	mqttcli_strsub(topic, "%prefix%", prefix);
+	
+	/* replace %topic% */
+	mqttcli_strsub(topic, "%topic%", state->cfg.mqtt_topic);
+	
+	/* add suffix */
+	strcat(topic, sufix);
+}
+
+
 void publish_callback(void** unused, struct mqtt_response_publish *published) 
 {
 	struct hfeasy_state *state = config_get_state();
 	struct hfeasy_config *cfg = &state->cfg;
-	uint8_t publish;
-
+	char t[100];
+	
 	char *topic_name = (char*) hfmem_malloc(published->topic_name_size + 1);
 	char *msg = (char*) hfmem_malloc(published->application_message_size + 1);
 	
@@ -65,28 +99,62 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 	msg[published->application_message_size] = '\0';
 	u_printf("Received publish('%s'): %s\n", topic_name, msg);
 	
-	if (strcmp(topic_name, cfg->mqtt_sub_topic) == 0) {
-		if (state->cfg.wifi_led & LED_CONFIG_MQTT)
-			led_ctrl("n1f"); /* got data = 1 blink */
+	/* dimmer is setup */
+	if (*gpio_pin(GPIO_I2C_SCL) != HFM_NOPIN) {
+		mqttcli_get_topic(t, "cmnd", "dimmer");
+		if (strcmp(topic_name, t) == 0) {
+			if (state->cfg.wifi_led & LED_CONFIG_MQTT)
+				led_ctrl("n1f"); /* got data = 1 blink */
 
-		publish = strcmp(cfg->mqtt_sub_topic, cfg->mqtt_pub_topic);
-
-		if (*gpio_pin(GPIO_I2C_SCL) != HFM_NOPIN) {
 			int lvl = atoi(msg);
-			gpio_set_dimmer(lvl, publish, RELAY_SRC_MQTT);
+			gpio_set_dimmer(lvl, 1, RELAY_SRC_MQTT);
 		}
-
-		if (*gpio_pin(GPIO_RELAY) != HFM_NOPIN) {
+		mqttcli_get_topic(t, "cmnd", "power");
+		if (strcmp(topic_name, t) == 0) {
+			if (state->cfg.wifi_led & LED_CONFIG_MQTT)
+				led_ctrl("n1f"); /* got data = 1 blink */
+			
+			/* set dimmer on/off */
 			if (strcmp(cfg->mqtt_on_value, msg) == 0) {
 				if (state->relay_state != 1)
-					gpio_set_relay(1, publish, RELAY_SRC_MQTT);
+					gpio_set_dimmer(0xff, 1, RELAY_SRC_MQTT);
 			} else if (strcmp(cfg->mqtt_off_value, msg) == 0) {
 				if (state->relay_state != 0)
-					gpio_set_relay(0, publish, RELAY_SRC_MQTT);
+					gpio_set_dimmer(0, 1, RELAY_SRC_MQTT);
 			}
 		}
-
 	}
+
+	/* relay is setup */
+	if (*gpio_pin(GPIO_RELAY) != HFM_NOPIN) {
+		mqttcli_get_topic(t, "cmnd", "power");
+		if (strcmp(topic_name, t) == 0) {
+			if (state->cfg.wifi_led & LED_CONFIG_MQTT)
+				led_ctrl("n1f"); /* got data = 1 blink */
+
+			if (strcmp(cfg->mqtt_on_value, msg) == 0) {
+				if (state->relay_state != 1)
+					gpio_set_relay(1, 1, RELAY_SRC_MQTT);
+			} else if (strcmp(cfg->mqtt_off_value, msg) == 0) {
+				if (state->relay_state != 0)
+					gpio_set_relay(0, 1, RELAY_SRC_MQTT);
+			}
+		}
+	}
+	
+	/* led */
+	if ((*gpio_pin(GPIO_LED_WIFI) != HFM_NOPIN) && 
+			(state->cfg.wifi_led == LED_CONFIG_TOPIC)) {
+		mqttcli_get_topic(t, "cmnd", "led");
+		if (strcmp(topic_name, t) == 0) {
+			if (strcmp(cfg->mqtt_on_value, msg) == 0) {
+				led_ctrl("n");
+			} else if (strcmp(cfg->mqtt_off_value, msg) == 0) {
+				led_ctrl("f");
+			}
+		}
+	}
+			
 	hfmem_free(topic_name);
 	hfmem_free(msg);
 }
@@ -150,6 +218,9 @@ static void USER_FUNC mqttcli_thread(void* client)
 	struct hfeasy_state *state = config_get_state();
 	struct mqtt_client *c = (struct mqtt_client*) client;
 	static uint8_t STATE = 0;
+	char topic[100];
+	char lwm[10];
+	
 	
 	while(1) {
 		//u_printf("mqttcli_thread STATE=%d\r\n", STATE);
@@ -186,17 +257,30 @@ static void USER_FUNC mqttcli_thread(void* client)
 						char *pass = strlen(state->cfg.mqtt_server_pass) == 0 ? NULL : state->cfg.mqtt_server_pass;
 						/* connected, init mqtt */
 						mqtt_init(client, fd, txbuf, MQTT_TX_BUF_SIZE, rxbuf, MQTT_RX_BUF_SIZE, publish_callback);
-						mqtt_connect(client, state->mac_addr_s, NULL, NULL, 0, user, pass, 0, 400);
+						
+						mqttcli_get_topic(topic, "tele", "LWT");
+						strcpy(lwm, "Online");
+						
+						mqtt_connect(client, state->mac_addr_s, topic, lwm, strlen(lwm), user, pass, MQTT_CONNECT_WILL_RETAIN, 60);
 						if (c->error != MQTT_OK) {
 							u_printf("error: %s\n", mqtt_error_str(c->error));
 							STATE = MQTTCLI_STATE_DISCONNECT;
 						} else {
 							STATE = MQTTCLI_STATE_RUN;
 							state->mqtt_ready = 1;
-							if (strlen(state->cfg.mqtt_sub_topic) > 0) {
-								u_printf("mqtt subscribe to '%s'\r\n", state->cfg.mqtt_sub_topic);
-								mqtt_subscribe(&mqttcli, state->cfg.mqtt_sub_topic, state->cfg.mqtt_qos);
-							}
+
+							mqttcli_get_topic(topic, "cmnd", "#");
+
+							//u_printf("mqtt subscribe to '%s'\r\n", state->cfg.mqtt_sub_topic);
+							mqtt_subscribe(&mqttcli, topic, state->cfg.mqtt_qos);
+							
+							
+							/* publish current state */
+							if (*gpio_pin(GPIO_RELAY) != HFM_NOPIN)
+								relay_publish_state();
+							if (*gpio_pin(GPIO_I2C_SCL) != HFM_NOPIN)
+								dimmer_publish_state();
+							
 						}
 					} else {
 						msleep(1000);
@@ -243,10 +327,14 @@ static void USER_FUNC mqttcli_thread(void* client)
 	}
 }
 
-void USER_FUNC mqttcli_publish(char *value)
+
+
+void USER_FUNC mqttcli_publish(char *value, char *sufix)
 {
 	struct hfeasy_state *state = config_get_state();
+	char topic[100];
 	uint8_t flags;
+	
 	switch (state->cfg.mqtt_qos) {
 		default:
 		case 0:
@@ -259,8 +347,10 @@ void USER_FUNC mqttcli_publish(char *value)
 			flags = MQTT_PUBLISH_QOS_2;
 			break;
 	}
+	
 	if (state->mqtt_ready) {
-		mqtt_publish(&mqttcli, state->cfg.mqtt_pub_topic, value, strlen(value), flags);
+		mqttcli_get_topic(topic, "stat", sufix);
+		mqtt_publish(&mqttcli, topic, value, strlen(value), flags);
 		if (state->cfg.wifi_led & LED_CONFIG_MQTT)
 			led_ctrl("n1f1n1f"); /* publish = 2 blinks */
 	}
@@ -271,10 +361,10 @@ void USER_FUNC mqttcli_initcfg(void)
 {
 	struct hfeasy_state *state = config_get_state();
 
-	sprintf(state->cfg.mqtt_pub_topic, "hf%s", state->mac_addr_s);
-	sprintf(state->cfg.mqtt_sub_topic, "hf%s", state->mac_addr_s);
-	sprintf(state->cfg.mqtt_on_value, "1");
-	sprintf(state->cfg.mqtt_off_value, "0");
+	sprintf(state->cfg.mqtt_topic, "hfeasy_%s", &state->mac_addr_s[6]);
+	sprintf(state->cfg.mqtt_full_topic, "%%prefix%%/%%topic%%/");
+	sprintf(state->cfg.mqtt_on_value, "ON");
+	sprintf(state->cfg.mqtt_off_value, "OFF");
 }
 
 

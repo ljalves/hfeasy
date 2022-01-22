@@ -15,11 +15,12 @@
 #define RELAY_SRC_SWITCH       3
 #define RELAY_SRC_SWITCH_UP    4
 #define RELAY_SRC_SWITCH_DN    5
+#define RELAY_SRC_POWERON      6
 
 
 void USER_FUNC relay_init(void);
 void USER_FUNC relay_deinit(void);
 void USER_FUNC gpio_set_relay(uint8_t action, uint8_t publish, uint8_t source);
-
+void USER_FUNC relay_publish_state(void);
 
 #endif

@@ -37,8 +37,8 @@ struct hfeasy_config {
 	uint16_t  mqtt_server_port;
 	char      mqtt_server_user[30];
 	char      mqtt_server_pass[30];
-	char      mqtt_sub_topic[30];
-	char      mqtt_pub_topic[30];
+	char      mqtt_topic[30];
+	char      mqtt_full_topic[50];
 	uint8_t   mqtt_qos;
 	char      mqtt_on_value[10];
 	char      mqtt_off_value[10];
@@ -58,6 +58,8 @@ struct hfeasy_config {
 	struct hfeasy_timer timers[CONFIG_MAX_TIMERS];
 	
 	//time_t    timer_on[CONFIG_MAX_TIMERS], timer_off[CONFIG_MAX_TIMERS];
+	
+	uint8_t   pwron_state;
 	
 	uint32_t  log_ptr;
 };
@@ -88,8 +90,6 @@ enum {
 	DEVICE_USWALLSW,
 	DEVICE_CUSTOM
 };
-
-
 
 void USER_FUNC config_init(void);
 void USER_FUNC config_save(void);
