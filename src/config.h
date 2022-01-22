@@ -97,5 +97,7 @@ void USER_FUNC reboot(void);
 
 struct hfeasy_state* USER_FUNC config_get_state(void);
 
+void log_write(char *s);
+
 
 #endif
