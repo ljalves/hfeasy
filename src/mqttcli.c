@@ -99,11 +99,13 @@ int USER_FUNC mqttcli_connect(void)
 	ip_addr_t server_addr;
 	int fd, tmp;
 	
-	if (hfnet_gethostbyname(state->cfg.mqtt_server_hostname, &server_addr) != HF_SUCCESS)
-		return -1;
-	
-	if (inet_aton(state->cfg.mqtt_server_hostname, &server_addr) == 0)
-		return -1;
+	/* try ip */
+	if (inet_aton(state->cfg.mqtt_server_hostname, &server_addr) == 0) {
+		/* try dns */
+		if (hfnet_gethostbyname(state->cfg.mqtt_server_hostname, &server_addr) != HF_SUCCESS) {
+			return -1;
+		}
+	}
 	
 	memset((char*)&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
