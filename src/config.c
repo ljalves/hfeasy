@@ -568,12 +568,37 @@ static void USER_FUNC httpd_page_log(char *url, char *rsp)
 					log_buf);
 }
 
+
+void USER_FUNC get_sta_settings(char *buf)
+{
+	char *words[3] = {NULL};
+	char rsp[64] = {0};
+
+	hfat_send_cmd("AT+WANN\r\n", sizeof("AT+WANN\r\n"), rsp, 64);
+	if (hfat_get_words(rsp, words, 2) > 0) {
+		if ((rsp[0]=='+') && (rsp[1]=='o') && (rsp[2]=='k')) {
+			strcpy(buf, words[1]);
+			return;
+		}
+	}
+	strcpy(buf, "");
+}
+
+
 static int USER_FUNC hfsys_event_callback(uint32_t event_id, void *param)
 {
+	char tmp[50];
+
 	switch(event_id) {
 		case HFE_WIFI_STA_CONNECTED:
 			u_printf("wifi sta connected!\r\n");
 			led_ctrl("n51f51r");
+		
+			/* check if static ip */
+			get_sta_settings(tmp);
+			if (strcmp(tmp, "static") == 0)
+				state.has_ip = 1;
+		
 			break;
 			
 		case HFE_WIFI_STA_DISCONNECTED:
