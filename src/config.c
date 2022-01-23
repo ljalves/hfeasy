@@ -278,6 +278,7 @@ static void USER_FUNC httpd_page_config_device(char *url, char *rsp)
 		led_deinit();
 		dimmer_deinit();
 		buzzer_deinit();
+		gpio_deinit();
 		
 		/* apply device default gpio config */
 		if (state.cfg.device > DEVICE_CUSTOM) {
@@ -288,6 +289,7 @@ static void USER_FUNC httpd_page_config_device(char *url, char *rsp)
 		led_init();
 		dimmer_init();
 		buzzer_init();
+		gpio_init();
 
 	}
 
@@ -340,6 +342,7 @@ static void USER_FUNC httpd_page_config_gpio(char *url, char *rsp)
 			led_deinit();
 			dimmer_deinit();
 			buzzer_deinit();
+			gpio_deinit();
 
 			state.cfg.gpio_config[9] = atoi(tmp);
 		
@@ -368,6 +371,7 @@ static void USER_FUNC httpd_page_config_gpio(char *url, char *rsp)
 			led_init();
 			dimmer_init();
 			buzzer_deinit();
+			gpio_init();
 
 		}
 	}
