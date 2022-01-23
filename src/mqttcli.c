@@ -107,7 +107,7 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 				led_ctrl("n1f"); /* got data = 1 blink */
 
 			int lvl = atoi(msg);
-			gpio_set_dimmer(lvl, 1, RELAY_SRC_MQTT);
+			dimmer_set(lvl, RELAY_SRC_MQTT);
 		}
 		mqttcli_get_topic(t, "cmnd", "power");
 		if (strcmp(topic_name, t) == 0) {
@@ -117,10 +117,10 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 			/* set dimmer on/off */
 			if (strcmp(cfg->mqtt_on_value, msg) == 0) {
 				if (state->relay_state != 1)
-					gpio_set_dimmer(0xff, 1, RELAY_SRC_MQTT);
+					dimmer_set(0xff, RELAY_SRC_MQTT);
 			} else if (strcmp(cfg->mqtt_off_value, msg) == 0) {
 				if (state->relay_state != 0)
-					gpio_set_dimmer(0, 1, RELAY_SRC_MQTT);
+					dimmer_set(0, RELAY_SRC_MQTT);
 			}
 		}
 	}
@@ -134,10 +134,10 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 
 			if (strcmp(cfg->mqtt_on_value, msg) == 0) {
 				if (state->relay_state != 1)
-					gpio_set_relay(1, 1, RELAY_SRC_MQTT);
+					relay_set(RELAY_ON, RELAY_SRC_MQTT);
 			} else if (strcmp(cfg->mqtt_off_value, msg) == 0) {
 				if (state->relay_state != 0)
-					gpio_set_relay(0, 1, RELAY_SRC_MQTT);
+					relay_set(RELAY_OFF, RELAY_SRC_MQTT);
 			}
 		}
 	}

@@ -566,15 +566,23 @@ void USER_FUNC buzzer_play(uint8_t tone)
 
 void USER_FUNC buzzer_init(void)
 {
-	if (*gpio_pin(GPIO_BUZZER) != HFM_NOPIN) {
-		hfgpio_configure_fpin(GPIO_BUZZER, HFM_IO_OUTPUT_0);
-		buzzer_timer = hftimer_create("buzzer", 10, false, HFTIMER_ID_BUZZER, buzzer_timer_handler, 0);
-	}
+	struct hfeasy_state *state = config_get_state();
+	if (*gpio_pin(GPIO_BUZZER) == HFM_NOPIN)
+		return;
+	
+	hfgpio_configure_fpin(GPIO_BUZZER, HFM_IO_OUTPUT_0);
+	buzzer_timer = hftimer_create("buzzer", 10, false, HFTIMER_ID_BUZZER, buzzer_timer_handler, 0);
+	state->func_state |= FUNC_BUZZER;
 }
 
 void USER_FUNC buzzer_deinit(void)
 {
-	hfgpio_configure_fpin(GPIO_BUZZER, HFM_IO_TYPE_INPUT);
-	hftimer_stop(buzzer_timer);
-	hftimer_delete(buzzer_timer);
+	struct hfeasy_state *state = config_get_state();
+
+	if (state->func_state & FUNC_BUZZER) {
+		hfgpio_configure_fpin(GPIO_BUZZER, HFM_IO_TYPE_INPUT);
+		hftimer_stop(buzzer_timer);
+		hftimer_delete(buzzer_timer);
+		state->func_state &= ~FUNC_BUZZER;
+	}
 }

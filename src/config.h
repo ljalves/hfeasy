@@ -50,7 +50,7 @@ struct hfeasy_config {
 
 	/* gpio */
 	int				device;
-	int				gpio_config[10];
+	int				gpio_config[11];
 	
 	/* timers */
 	time_t    countdown[2];
@@ -60,6 +60,7 @@ struct hfeasy_config {
 	//time_t    timer_on[CONFIG_MAX_TIMERS], timer_off[CONFIG_MAX_TIMERS];
 	
 	uint8_t   pwron_state;
+	
 	
 	uint32_t  log_ptr;
 };
@@ -79,16 +80,32 @@ struct hfeasy_state {
 	
 	time_t	countdown[2];
 	
+	uint16_t func_state;
+	
 	struct hfeasy_config cfg;
 };
 
 
+#define FUNC_DIMMER    0x0001
+#define FUNC_RELAY     0x0002
+#define FUNC_BTN_PUSH  0x0004
+#define FUNC_BTN_TOG   0x0008
+#define FUNC_BTN_UP    0x0010
+#define FUNC_BTN_DN    0x0020
+#define FUNC_BUZZER    0x0040
+#define FUNC_I2C       0x0080
+#define FUNC_LED       0x0100
+
+
+
 enum {
-	DEVICE_MODULE = 0,
+	DEVICE_CUSTOM = 0,
+	DEVICE_MODULE,
 	DEVICE_PLUG,
 	DEVICE_USDIMMER,
 	DEVICE_USWALLSW,
-	DEVICE_CUSTOM
+	DEVICE_GHOMA,
+	DEVICE_END
 };
 
 void USER_FUNC config_init(void);

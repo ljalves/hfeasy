@@ -481,6 +481,26 @@
               <FileType>5</FileType>
               <FilePath>..\src\relay.h</FilePath>
             </File>
+            <File>
+              <FileName>dimmer.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\src\dimmer.h</FilePath>
+            </File>
+            <File>
+              <FileName>i2c.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\src\i2c.h</FilePath>
+            </File>
+            <File>
+              <FileName>dimmer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\dimmer.c</FilePath>
+            </File>
+            <File>
+              <FileName>i2c.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\i2c.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

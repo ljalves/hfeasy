@@ -16,6 +16,8 @@
 #include "config.h"
 #include "led.h"
 #include "relay.h"
+#include "i2c.h"
+#include "dimmer.h"
 
 
 #define HFEASY_VERSION_MAJOR	0

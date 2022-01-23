@@ -16,11 +16,13 @@ enum {
 };
 
 
+#define GPIO_INV_LED 1
+#define GPIO_INV_RELAY 2
+
+
 void USER_FUNC gpio_init(void);
+void USER_FUNC gpio_deinit(void);
 int USER_FUNC gpio_get_state(int fid);
 int *gpio_pin(int n);
-
-void USER_FUNC gpio_set_dimmer(uint8_t lvl, uint8_t publish, uint8_t source);
-void USER_FUNC dimmer_publish_state(void);
 
 #endif

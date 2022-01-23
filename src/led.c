@@ -30,6 +30,11 @@ static uint8_t led_idx = 0;
 
 static inline void USER_FUNC set_led(uint8_t st)
 {
+	struct hfeasy_state *state = config_get_state();
+	
+	if (state->cfg.gpio_config[10] & GPIO_INV_LED)
+		st ^= 1;
+	
 	if (st)
 		hfgpio_fset_out_low(GPIO_LED_WIFI);
 	else
@@ -111,19 +116,27 @@ void USER_FUNC led_ctrl(char *a)
 
 void USER_FUNC led_init(void)
 {
+	struct hfeasy_state *state = config_get_state();
+
 	if (*gpio_pin(GPIO_LED_WIFI) == HFM_NOPIN)
 		return;
 
-	hfgpio_configure_fpin(GPIO_LED_WIFI, HFM_IO_OUTPUT_0);
-	hfgpio_fset_out_low(GPIO_LED_WIFI);
+	hfgpio_configure_fpin(GPIO_LED_WIFI, state->cfg.gpio_config[10] & GPIO_INV_LED ? HFM_IO_OUTPUT_1 : HFM_IO_OUTPUT_0);
 	
 	led_idx = 0;
 	strcpy(led_actions, "");
 	led_timer = hftimer_create("led", 1, false, HFTIMER_ID_LED, led_timer_handler, 0);
+	
+	state->func_state |= FUNC_LED;
 }
 
 void USER_FUNC led_deinit(void)
 {
-	hfgpio_configure_fpin(GPIO_LED_WIFI, HFM_IO_TYPE_INPUT);
-	hftimer_delete(led_timer);
+	struct hfeasy_state *state = config_get_state();
+
+	if (state->func_state & FUNC_LED) {
+		hfgpio_configure_fpin(GPIO_LED_WIFI, HFM_IO_TYPE_INPUT);
+		hftimer_delete(led_timer);
+		state->func_state &= ~FUNC_LED;
+	}
 }

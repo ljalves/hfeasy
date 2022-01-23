@@ -167,7 +167,13 @@ static void USER_FUNC timer_thread(void *opaque)
 					} else if (now > state->countdown[i]) {
 						//u_printf("DONE OFF/ON\n\r");
 						state->countdown[i] = 0;
-						gpio_set_relay((i == 0) ? RELAY_OFF : RELAY_ON, 1, RELAY_SRC_TIMER);
+						
+						if (state->func_state & FUNC_RELAY)
+							relay_set((i == 0) ? RELAY_OFF : RELAY_ON, RELAY_SRC_TIMER);
+						
+						if (state->func_state & FUNC_DIMMER)
+							dimmer_set((i == 0) ? DIMMER_OFF : DIMMER_ON, RELAY_SRC_TIMER);
+						
 					}
 				} else {
 					/* wait to start */
@@ -218,5 +224,5 @@ void USER_FUNC timer_init(void)
 	}
 
 	
-	httpd_add_page("/timer", httpd_page_timer);
+	httpd_add_page("/timer", httpd_page_timer, NULL);
 }

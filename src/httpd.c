@@ -2,7 +2,7 @@
 #include "hfeasy.h"
 
 #define HTTP_SERVER_PORT	81
-#define HTTPD_MAX_PAGES		10
+#define HTTPD_MAX_PAGES		15
 
 #define HTTPS_RECV_TIMEOUT 3000
 #define HTTPS_RECV_BUF_LEN 2048
@@ -18,7 +18,7 @@ static char https_recv_buf[HTTPS_RECV_BUF_LEN];
 
 
 static const char *http_header = "HTTP/1.1 200 OK\r\n"\
-"Content-type: text/html\r\n"\
+"Content-type: text/%s\r\n"\
 "Server: HFEASY\r\n"
 "Connection: close\r\n\r\n";
 
@@ -26,6 +26,7 @@ static const char *http_header = "HTTP/1.1 200 OK\r\n"\
 struct httpd_page {
 	const char *url;
 	void (*callback) (char *url, char *rsp);
+	const char *type;
 } httpd_pages[HTTPD_MAX_PAGES] = {
 	{ .url = NULL },
 };
@@ -78,11 +79,13 @@ int USER_FUNC httpd_arg_find(char *url, char *arg, char *val)
 }
 
 
-int USER_FUNC httpd_add_page(const char *url, void (*callback)(char *url, char *rsp))
+int USER_FUNC httpd_add_page(const char *url, void (*callback)(char *url, char *rsp), char *type)
 {
 	int i;
 	
 	for (i = 0; i < HTTPD_MAX_PAGES; i++) {
+		if (strcmp(httpd_pages[i].url, url) == 0)
+			break;
 		if (httpd_pages[i].url == NULL)
 			break;
 	}
@@ -91,6 +94,7 @@ int USER_FUNC httpd_add_page(const char *url, void (*callback)(char *url, char *
 	
 	httpd_pages[i].url = url;
 	httpd_pages[i].callback = callback;
+	httpd_pages[i].type = type;
 	
 	return 0;
 }
@@ -101,6 +105,7 @@ static int USER_FUNC httpd_callback(char *url, char *rsp)
 	struct httpd_page *p = httpd_pages;
 	char buf[50], *a;
 	char *r = rsp;
+	int s;
 	
 	while (p->url != NULL) {
 		strncpy(buf, url, 50);
@@ -109,8 +114,11 @@ static int USER_FUNC httpd_callback(char *url, char *rsp)
 		if (a != NULL)
 			*a = '\0';
 		if (strcmp(p->url, buf) == 0) {
-			strcpy(r, http_header);
-			r += strlen(http_header);
+			if (p->type != NULL)
+				s = sprintf(r, http_header, p->type);
+			else
+				s = sprintf(r, http_header, "html");
+			r += s;
 			p->callback(url, r);
 			u_printf("'%s' size=%d\r\n", url, strlen(rsp));
 			return 0;
@@ -329,5 +337,5 @@ void USER_FUNC httpd_init(void)
 	if (hfhttpd_url_callback_register(httpd_callback, state->cfg.http_auth) != HF_SUCCESS)
 		u_printf("error registering url callback\r\n");
 	
-	httpd_add_page("/styles.css", styles_cbk);
+	httpd_add_page("/styles.css", styles_cbk, "css");
 }

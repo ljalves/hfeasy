@@ -20,7 +20,7 @@
 
 void USER_FUNC relay_init(void);
 void USER_FUNC relay_deinit(void);
-void USER_FUNC gpio_set_relay(uint8_t action, uint8_t publish, uint8_t source);
+void USER_FUNC relay_set(uint8_t action, uint8_t source);
 void USER_FUNC relay_publish_state(void);
 
 #endif
