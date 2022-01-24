@@ -110,7 +110,7 @@ static const char *config_page =
 	"<option value=\"5\"%s>MQTT topic</option>"\
 	"<option value=\"6\"%s>Find</option>"\
 	"</select>"\
-	"<tr><td>Power on state<td><input type=\"text\" name=\"pwron\" value=\"%d\"> (0=off, >0=on; dimmer: level=0~128; 255=last state)"\
+	"<tr><td>Power on state<td><input type=\"text\" name=\"pwron\" value=\"%d\"> (0=off, >0=on; dimmer: level=0~128)"\
 	"</table><input type=\"submit\" value=\"Apply\"></form>"\
 	"<hr><form action=\"/save\" method=\"GET\"><input type=\"submit\" value=\"Save changes to flash and reboot\" name=\"save\"></form>"\
 	"</body></html>";

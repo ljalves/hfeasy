@@ -82,8 +82,8 @@ void USER_FUNC dimmer_set(uint8_t lvl, uint8_t source)
 		mqttcli_publish(buf, "dimmer");
 	}
 
-	hfsys_nvm_write(0, (char *) &state->relay_state, sizeof(state->relay_state));
-	hfsys_nvm_write(sizeof(state->relay_state), (char *) &state->dimmer_level, sizeof(state->dimmer_level));
+	//hfsys_nvm_write(0, (char *) &state->relay_state, sizeof(state->relay_state));
+	//hfsys_nvm_write(sizeof(state->relay_state), (char *) &state->dimmer_level, sizeof(state->dimmer_level));
 }
 
 static void USER_FUNC switch_up_timer_cbk(hftimer_handle_t htimer)
@@ -178,7 +178,7 @@ void USER_FUNC dimmer_init(void)
 
 	char b[20];
 
-	if (state->cfg.pwron_state == 0xff) {
+	/*if (state->cfg.pwron_state == 0xff) {
 		hfsys_nvm_read(0, (char *) &state->relay_state, sizeof(state->relay_state));
 		sprintf(b, "st=0x%x", state->relay_state);
 		log_write(b);
@@ -189,10 +189,10 @@ void USER_FUNC dimmer_init(void)
 			dimmer_set(DIMMER_ON, RELAY_SRC_POWERON);
 		else
 			dimmer_set(DIMMER_OFF, RELAY_SRC_POWERON);
-	} else {
+	} else {*/
 		state->dimmer_level = 0x80;
 		dimmer_set(state->cfg.pwron_state, RELAY_SRC_POWERON);
-	}
+	//}
 	state->func_state |= FUNC_DIMMER;
 }
 
