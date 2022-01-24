@@ -285,11 +285,11 @@ static void USER_FUNC httpd_page_config_device(char *url, char *rsp)
 			memcpy(state.cfg.gpio_config, gpio_default_config[state.cfg.device - 1], sizeof(state.cfg.gpio_config));
 		}
 
+		gpio_init();
 		relay_init();
 		led_init();
 		dimmer_init();
 		buzzer_init();
-		gpio_init();
 
 	}
 
