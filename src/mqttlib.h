@@ -189,7 +189,7 @@ struct mqtt_fixed_header {
     enum MQTTControlPacketType control_type;
 
     /** The packets control flags.*/
-    uint8_t control_flags: 4;
+    uint32_t control_flags: 4;
 
     /** The remaining size of the packet in bytes (i.e. the size of variable header and payload).*/
     uint32_t remaining_length;
@@ -214,7 +214,7 @@ struct mqtt_fixed_header {
     MQTT_ERROR(MQTT_ERROR_CONTROL_FORBIDDEN_TYPE)        \
     MQTT_ERROR(MQTT_ERROR_CONTROL_INVALID_FLAGS)         \
     MQTT_ERROR(MQTT_ERROR_CONTROL_WRONG_TYPE)            \
-    MQTT_ERROR(MQTT_ERROR_CONNECT_NULL_CLIENT_ID)        \
+    MQTT_ERROR(MQTT_ERROR_CONNECT_CLIENT_ID_REFUSED)        \
     MQTT_ERROR(MQTT_ERROR_CONNECT_NULL_WILL_MESSAGE)     \
     MQTT_ERROR(MQTT_ERROR_CONNECT_FORBIDDEN_WILL_QOS)    \
     MQTT_ERROR(MQTT_ERROR_CONNACK_FORBIDDEN_FLAGS)       \
@@ -235,7 +235,8 @@ struct mqtt_fixed_header {
     MQTT_ERROR(MQTT_ERROR_SUBSCRIBE_FAILED)              \
     MQTT_ERROR(MQTT_ERROR_CONNECTION_CLOSED)             \
     MQTT_ERROR(MQTT_ERROR_INITIAL_RECONNECT)             \
-    MQTT_ERROR(MQTT_ERROR_INVALID_REMAINING_LENGTH)
+    MQTT_ERROR(MQTT_ERROR_INVALID_REMAINING_LENGTH)      \
+    MQTT_ERROR(MQTT_ERROR_CLEAN_SESSION_IS_REQUIRED)
 
 /* todo: add more connection refused errors */
 
@@ -275,6 +276,29 @@ enum MQTTErrors {
  * @returns The associated error message.
  */
 const char* mqtt_error_str(enum MQTTErrors error);
+
+/**
+ * @brief Pack a MQTT 16 bit integer, given a native 16 bit integer .
+ * 
+ * @param[out] buf the buffer that the MQTT integer will be written to.
+ * @param[in] integer the native integer to be written to \p buf.
+ * 
+ * @warning This function provides no error checking.
+ * 
+ * @returns 2
+*/
+ssize_t __mqtt_pack_uint16(uint8_t *buf, uint16_t integer);
+
+/**
+ * @brief Unpack a MQTT 16 bit integer to a native 16 bit integer.
+ * 
+ * @param[in] buf the buffer that the MQTT integer will be read from.
+ * 
+ * @warning This function provides no error checking and does not modify \p buf.
+ * 
+ * @returns The native integer
+*/
+uint16_t __mqtt_unpack_uint16(const uint8_t *buf);
 
 /**
  * @brief Pack a MQTT string, given a c-string \p str.
@@ -686,7 +710,7 @@ enum MQTTConnectFlags {
     MQTT_CONNECT_WILL_QOS_2 = (2u & 0x03) << 3,
     MQTT_CONNECT_WILL_RETAIN = 32u,
     MQTT_CONNECT_PASSWORD = 64u,
-    MQTT_CONNECT_USER_NAME = 128u,
+    MQTT_CONNECT_USER_NAME = 128u
 };
 
 /**
@@ -695,8 +719,8 @@ enum MQTTConnectFlags {
  * 
  * @param[out] buf the buffer to pack the connection request packet into.
  * @param[in] bufsz the number of bytes left in \p buf.
- * @param[in] client_id the ID that identifies the local client. \p client_id is a required 
- *                      parameter.
+ * @param[in] client_id the ID that identifies the local client. \p client_id can be NULL or an empty
+ *                      string for Anonymous clients.
  * @param[in] will_topic the topic under which the local client's will message will be published.
  *                       Set to \c NULL for no will message. If \p will_topic is not \c NULL a
  *                       \p will_message must also be provided.
@@ -710,7 +734,7 @@ enum MQTTConnectFlags {
  * @param[in] password the password to be used to connect to the broker with. Set to \c NULL if
  *                     no password is required.
  * @param[in] connect_flags additional MQTTConnectFlags to be set. The only flags that need to be
- *                          set manually are \c MQTT_CONNECT_CLEAN_SESSION, 
+ *                          set manually are \c MQTT_CONNECT_CLEAN_SESSION,
  *                          \c MQTT_CONNECT_WILL_QOS_X (for \c X &isin; {0, 1, 2}), and 
  *                          \c MQTT_CONNECT_WILL_RETAIN. Set to 0 if no additional flags are 
  *                          required.
@@ -848,7 +872,7 @@ ssize_t mqtt_pack_pubxxx_request(uint8_t *buf, size_t bufsz,
  *          packet, a negative value if there was a protocol violation.
  */
 ssize_t mqtt_pack_subscribe_request(uint8_t *buf, size_t bufsz, 
-                                    uint16_t packet_id, 
+                                    unsigned int packet_id, 
                                     ...); /* null terminated */
 
 /** 
@@ -882,7 +906,7 @@ ssize_t mqtt_pack_subscribe_request(uint8_t *buf, size_t bufsz,
  *          packet, a negative value if there was a protocol violation.
  */
 ssize_t mqtt_pack_unsubscribe_request(uint8_t *buf, size_t bufsz, 
-                                      uint16_t packet_id, 
+                                      unsigned int packet_id, 
                                       ...); /* null terminated */
 
 /**
@@ -1110,6 +1134,13 @@ struct mqtt_client {
      * @see keep_alive
      */
     int number_of_keep_alives;
+
+    /**
+     * @brief The current sent offset.
+     *
+     * This is used to allow partial send commands.
+     */
+    size_t send_offset;
 
     /** 
      * @brief The timestamp of the last message sent to the buffer.
@@ -1415,7 +1446,7 @@ void mqtt_reinit(struct mqtt_client* client,
  * @pre mqtt_init must have been called.
  * 
  * @param[in,out] client The MQTT client.
- * @param[in] client_id The unique name identifying the client.
+ * @param[in] client_id The unique name identifying the client. (or NULL)
  * @param[in] will_topic The topic name of client's \p will_message. If no will message is 
  *            desired set to \c NULL.
  * @param[in] will_message The application message (data) to be published in the event the 
