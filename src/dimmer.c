@@ -64,10 +64,15 @@ void USER_FUNC dimmer_set(uint8_t lvl, uint8_t source)
 	
 
 	if (state->relay_state == 0) {
+		if (state->cfg.wifi_led == LED_CONFIG_RELAY)
+			led_ctrl("f");
+
 		gpio_i2c_send(I2C_ADDR, 0);
 		sprintf(buf, "%d", 0);
 		mqttcli_publish(buf, "dimmer");
 	} else {
+		if (state->cfg.wifi_led == LED_CONFIG_RELAY)
+			led_ctrl("n");
 
 		/* top limit */
 		if (lvl > 0x80)
