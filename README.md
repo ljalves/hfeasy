@@ -40,8 +40,16 @@ After flashing hfeasy, you'll have access to the following web pages:
 * US Wall Dimmer (AW51011D)
 <img src="https://images-na.ssl-images-amazon.com/images/I/413UPchrIfL._SL1000_.jpg" width="400">
 
+* US Wall Switch (AW51011) (https://github.com/ljalves/hfeasy/issues/12)
+
+* G-Homa (https://github.com/ljalves/hfeasy/issues/26)
+
+* Any LPB100/LPT100F device should be supported using the custom config option
+
 # Firmware
-* [Download here](https://drive.google.com/open?id=1HWl-QiYM2u8lW9TAv1M6Kr9DPkj1_wRG)
+* [Releases](https://github.com/ljalves/hfeasy/releases/tag/0v10)
+
+* [Old download place](https://drive.google.com/open?id=1HWl-QiYM2u8lW9TAv1M6Kr9DPkj1_wRG)
 * hfeasy 0v7
   * Changes:
     * MQTT fixes: Publish state when sub and pub topics are different
