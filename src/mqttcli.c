@@ -259,7 +259,7 @@ static void USER_FUNC mqttcli_thread(void* client)
 						mqtt_init(client, fd, txbuf, MQTT_TX_BUF_SIZE, rxbuf, MQTT_RX_BUF_SIZE, publish_callback);
 						
 						mqttcli_get_topic(topic, "tele", "LWT");
-						strcpy(lwm, "Online");
+						strcpy(lwm, "Offline");
 						
 						mqtt_connect(client, state->mac_addr_s, topic, lwm, strlen(lwm), user, pass, MQTT_CONNECT_WILL_RETAIN, 60);
 						if (c->error != MQTT_OK) {
@@ -274,6 +274,11 @@ static void USER_FUNC mqttcli_thread(void* client)
 							//u_printf("mqtt subscribe to '%s'\r\n", state->cfg.mqtt_sub_topic);
 							mqtt_subscribe(&mqttcli, topic, state->cfg.mqtt_qos);
 							
+							
+							/* send online to the LWT topic */
+							mqttcli_get_topic(topic, "tele", "LWT");
+							strcpy(lwm, "Online");
+							mqtt_publish(&mqttcli, topic, lwm, strlen(lwm), MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
 							
 							/* publish current state */
 							if (*gpio_pin(GPIO_RELAY) != HFM_NOPIN)
