@@ -46,7 +46,7 @@ const int gpio_default_config[DEVICE_END - 1][11]	=
 	{	43, 44, 30, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB100, GPIO_INV_LED},
 	
 	/* us dimmer */
-	{	39, 0, 11, 0, 18, 12, 0, 23, 20, HFM_TYPE_LPT100F, GPIO_INV_LED},
+	{	6, 0, 10, 0, 8, 9, 0, 4, 7, HFM_TYPE_LPT100F, GPIO_INV_LED},
 	
 	/* us wall switch */
 	{	10, 8, 9, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPT100F, GPIO_INV_LED},
@@ -110,7 +110,7 @@ static const char *config_page =
 	"<option value=\"5\"%s>MQTT topic</option>"\
 	"<option value=\"6\"%s>Find</option>"\
 	"</select>"\
-	"<tr><td>Power on state<td><input type=\"text\" name=\"pwron\" value=\"%d\"> (relay: 0=off, >0=on; dimmer: level)"\
+	"<tr><td>Power on state<td><input type=\"text\" name=\"pwron\" value=\"%d\"> (0=off, >0=on; dimmer: level=0~128; 255=last state)"\
 	"</table><input type=\"submit\" value=\"Apply\"></form>"\
 	"<hr><form action=\"/save\" method=\"GET\"><input type=\"submit\" value=\"Save changes to flash and reboot\" name=\"save\"></form>"\
 	"</body></html>";
@@ -367,11 +367,11 @@ static void USER_FUNC httpd_page_config_gpio(char *url, char *rsp)
 					state.cfg.gpio_config[10] |= GPIO_INV_RELAY;
 			}
 
+			gpio_init();
 			relay_init();
 			led_init();
 			dimmer_init();
 			buzzer_deinit();
-			gpio_init();
 
 		}
 	}

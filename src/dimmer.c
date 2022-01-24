@@ -48,23 +48,25 @@ void USER_FUNC dimmer_set(uint8_t lvl, uint8_t source)
 	char buf[10];
 
 	/* lvl=0xff - restore previous level */
-	if (lvl == DIMMER_ON)
+	if (lvl == DIMMER_ON) {
 		lvl = state->dimmer_level;
-
-	/* lvl=0xfe = toggle state */
-	if (lvl == DIMMER_TOGGLE) {
-		state->relay_state ^= 1;
-		if (state->relay_state == 1)
-			lvl = state->dimmer_level;
-		else
-			lvl = 0;
-	} else if (lvl == 0)
-		state->relay_state = 0;
-	else
 		state->relay_state = 1;
+	}
+	
+	/* lvl=0xfe = toggle state */
+	else if (lvl == DIMMER_TOGGLE) {
+		lvl = state->dimmer_level;
+		state->relay_state ^= 1;
+	}
+	/* lvl=0 = turn off */
+	else if (lvl == DIMMER_OFF)
+		state->relay_state = 0;
+	
 
 	if (state->relay_state == 0) {
 		gpio_i2c_send(I2C_ADDR, 0);
+		sprintf(buf, "%d", 0);
+		mqttcli_publish(buf, "dimmer");
 	} else {
 
 		/* top limit */
@@ -73,16 +75,16 @@ void USER_FUNC dimmer_set(uint8_t lvl, uint8_t source)
 
 		/* send dimmer level */
 		gpio_i2c_send(I2C_ADDR, lvl);
-	
+
 		if (lvl > 0)
 			state->dimmer_level = lvl;
+		sprintf(buf, "%d", lvl);
+		mqttcli_publish(buf, "dimmer");
 	}
-	
-	sprintf(buf, "%d", lvl);
-	mqttcli_publish(buf, "dimmer");
+
+	hfsys_nvm_write(0, (char *) &state->relay_state, sizeof(state->relay_state));
+	hfsys_nvm_write(sizeof(state->relay_state), (char *) &state->dimmer_level, sizeof(state->dimmer_level));
 }
-
-
 
 static void USER_FUNC switch_up_timer_cbk(hftimer_handle_t htimer)
 {
@@ -174,8 +176,23 @@ void USER_FUNC dimmer_init(void)
 		state->func_state |= FUNC_BTN_DN;
 	}	
 
-	state->dimmer_level = 0x80;
-	dimmer_set(state->cfg.pwron_state, RELAY_SRC_POWERON);
+	char b[20];
+
+	if (state->cfg.pwron_state == 0xff) {
+		hfsys_nvm_read(0, (char *) &state->relay_state, sizeof(state->relay_state));
+		sprintf(b, "st=0x%x", state->relay_state);
+		log_write(b);
+		hfsys_nvm_read(sizeof(state->relay_state), (char *) &state->dimmer_level, sizeof(state->dimmer_level));
+		sprintf(b, "lv=0x%x", state->dimmer_level);
+		log_write(b);
+		if (state->relay_state)
+			dimmer_set(DIMMER_ON, RELAY_SRC_POWERON);
+		else
+			dimmer_set(DIMMER_OFF, RELAY_SRC_POWERON);
+	} else {
+		state->dimmer_level = 0x80;
+		dimmer_set(state->cfg.pwron_state, RELAY_SRC_POWERON);
+	}
 	state->func_state |= FUNC_DIMMER;
 }
 

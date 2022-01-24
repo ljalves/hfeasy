@@ -23,7 +23,7 @@ SOFTWARE.
 
 #include "hfeasy.h"
 
-int gpio_lpt100f[11] =
+const int gpio_lpt100[11] =
 {
 	HFM_NOPIN,
 	HFM_PIN1,
@@ -38,7 +38,22 @@ int gpio_lpt100f[11] =
 	HFM_PIN11
 };
 
-int gpio_lpb100[49] = 
+const int gpio_lpt100f[11] =
+{
+	HFM_NOPIN,
+	HFM_PIN1,
+	HFM_PIN9,
+	HFM_PIN45,
+	HFM_PIN23,
+	HFM_PIN41,
+	HFM_PIN39,
+	HFM_PIN20,
+	HFM_PIN18,
+	HFM_PIN12,
+	HFM_PIN11
+};
+
+const int gpio_lpb100[49] = 
 {
 	HFM_NOPIN,
 	HFM_PIN1,
@@ -92,15 +107,15 @@ int gpio_lpb100[49] =
 };
 
 
-int *gpio_module_types[5] = {
+const int *gpio_module_types[5] = {
 	gpio_lpb100,
-	NULL,
+	gpio_lpt100,
 	NULL,
 	NULL,
 	gpio_lpt100f,
 };
 
-int *gpio = NULL;
+const int *gpio = NULL;
 
 int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
 {
@@ -110,15 +125,15 @@ int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
 	HFM_NOPIN,	//HFGPIO_F_JTAG_TMS
 	HFM_NOPIN,		//HFGPIO_F_USBDP
 	HFM_NOPIN,		//HFGPIO_F_USBDM
-	HF_M_PIN(39),	//HFGPIO_F_UART0_TX
-	HFM_NOPIN,	//HFGPIO_F_UART0_RTS
-	HF_M_PIN(41),	//HFGPIO_F_UART0_RX
-	HFM_NOPIN,	//HFGPIO_F_UART0_CTS
+	HFM_NOPIN, //HF_M_PIN(39),	//HFGPIO_F_UART0_TX
+	HFM_NOPIN, //HF_M_PIN(40),	//HFGPIO_F_UART0_RTS
+	HFM_NOPIN, //HF_M_PIN(41),	//HFGPIO_F_UART0_RX
+	HFM_NOPIN, //HF_M_PIN(42),	//HFGPIO_F_UART0_CTS
 	
 	HF_M_PIN(27),	//HFGPIO_F_SPI_MISO
 	HF_M_PIN(28),	//HFGPIO_F_SPI_CLK
 	HF_M_PIN(29),	//HFGPIO_F_SPI_CS
-	HFM_NOPIN, //HF_M_PIN(30),	//HFGPIO_F_SPI_MOSI
+	HF_M_PIN(30),	//HFGPIO_F_SPI_MOSI
 	
 	HFM_NOPIN,	//HFGPIO_F_UART1_TX,
 	HFM_NOPIN,	//HFGPIO_F_UART1_RTS,
@@ -128,10 +143,10 @@ int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
 	HFM_NOPIN, //HF_M_PIN(43),	//HFGPIO_F_NLINK
 	HFM_NOPIN, //HF_M_PIN(44),	//HFGPIO_F_NREADY
 	HF_M_PIN(45),	//HFGPIO_F_NRELOAD
-	HF_M_PIN(7),	//HFGPIO_F_SLEEP_RQ
-	HF_M_PIN(8),	//HFGPIO_F_SLEEP_ON
+	HFM_NOPIN, //HF_M_PIN(7),	//HFGPIO_F_SLEEP_RQ
+	HFM_NOPIN, //HF_M_PIN(8),	//HFGPIO_F_SLEEP_ON
 		
-	HF_M_PIN(15),		//HFGPIO_F_WPS
+	HFM_NOPIN, //HF_M_PIN(15),		//HFGPIO_F_WPS
 	HFM_NOPIN,		//HFGPIO_F_RESERVE1
 	HFM_NOPIN,		//HFGPIO_F_RESERVE2
 	HFM_NOPIN,		//HFGPIO_F_RESERVE3
@@ -389,10 +404,12 @@ void USER_FUNC gpio_deinit(void)
 
 	if (state->func_state & FUNC_BTN_TOG) {
 		hfgpio_fdisable_interrupt(GPIO_SWITCH_TOGGLE);
+		state->func_state &= ~FUNC_BTN_TOG;
 	}
 
 	if (state->func_state & FUNC_BTN_PUSH) {
 		hfgpio_fdisable_interrupt(GPIO_SWITCH_PUSH);
+		state->func_state &= ~FUNC_BTN_PUSH;
 	}
 	
 	hftimer_delete(debounce_timer);

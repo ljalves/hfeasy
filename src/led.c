@@ -36,9 +36,9 @@ static inline void USER_FUNC set_led(uint8_t st)
 		st ^= 1;
 	
 	if (st)
-		hfgpio_fset_out_low(GPIO_LED_WIFI);
-	else
 		hfgpio_fset_out_high(GPIO_LED_WIFI);
+	else
+		hfgpio_fset_out_low(GPIO_LED_WIFI);
 }
 
 

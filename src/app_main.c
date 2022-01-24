@@ -29,25 +29,18 @@ const hfat_cmd_t user_define_at_cmds_table[] = {
 
 void app_init(void)
 {
-	u_printf("app_init\r\n");
 }
 
 int USER_FUNC app_main(void)
 {
+	hfdbg_set_level(0);
+
+	while(!hfnet_wifi_is_active())
+		msleep(100);
+		
 	u_printf("sdk version(%s), app_main start time is %s %s\n",
 						hfsys_get_sdk_version(), __DATE__, __TIME__);
 	
-	while(!hfnet_wifi_is_active())
-		msleep(100);
-	
-	if (hfnet_start_assis(ASSIS_PORT) != HF_SUCCESS) {
-		HF_Debug(DEBUG_WARN,"start assis fail\n");
-	}
-	
-	if (hfnet_start_uart(HFTHREAD_PRIORITIES_LOW,(hfnet_callback_t) NULL) != HF_SUCCESS) {
-		HF_Debug(DEBUG_WARN,"start uart fail!\n");
-	}
-
 	if (hfnet_start_httpd(HFTHREAD_PRIORITIES_MID) != HF_SUCCESS) {
 		HF_Debug(DEBUG_WARN,"start httpd fail\n");
 	}

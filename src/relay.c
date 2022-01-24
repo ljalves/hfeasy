@@ -63,8 +63,8 @@ void USER_FUNC relay_set(uint8_t action, uint8_t source)
 		set_relay_pin(0);
 		val = state->cfg.mqtt_off_value;
 	}
-	//if (changed)
-		mqttcli_publish(val, "power");
+	hfsys_nvm_write(0, (char *) &state->relay_state, sizeof(state->relay_state));
+	mqttcli_publish(val, "power");
 }
 
 
@@ -78,10 +78,15 @@ void USER_FUNC relay_init(void)
 	hfgpio_configure_fpin(GPIO_RELAY, HFM_IO_OUTPUT_0);
 	state->func_state |= FUNC_RELAY;
 	
-	if (state->cfg.pwron_state)
-		relay_set(RELAY_ON, RELAY_SRC_POWERON);
-	else
-		relay_set(RELAY_OFF, RELAY_SRC_POWERON);
+
+	if (state->cfg.pwron_state == 0xff) {
+		hfsys_nvm_read(0, (char *) &state->relay_state, sizeof(state->relay_state));
+	} else {
+		if (state->cfg.pwron_state)
+			relay_set(RELAY_ON, RELAY_SRC_POWERON);
+		else
+			relay_set(RELAY_OFF, RELAY_SRC_POWERON);
+	}
 }
 
 void USER_FUNC relay_deinit(void)
