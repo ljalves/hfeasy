@@ -7,7 +7,7 @@
 
   <Targets>
     <Target>
-      <TargetName>MAIN</TargetName>
+      <TargetName>LPXX00</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
       <pCCUsed>5060750::V5.06 update 6 (build 750)::ARMCC</pCCUsed>
@@ -46,14 +46,14 @@
             <NotGenerated>0</NotGenerated>
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
-          <OutputDirectory>.\output\</OutputDirectory>
+          <OutputDirectory>.\build_lpxx00\</OutputDirectory>
           <OutputName>HFEASY</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
-          <CreateHexFile>1</CreateHexFile>
+          <CreateHexFile>0</CreateHexFile>
           <DebugInformation>1</DebugInformation>
-          <BrowseInformation>1</BrowseInformation>
-          <ListingPath>.\output\</ListingPath>
+          <BrowseInformation>0</BrowseInformation>
+          <ListingPath>.\build_lpxx00\</ListingPath>
           <HexFormatSelection>1</HexFormatSelection>
           <Merge32K>0</Merge32K>
           <CreateBatchFile>0</CreateBatchFile>
@@ -80,8 +80,8 @@
           <AfterMake>
             <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>1</RunUserProg2>
-            <UserProg1Name>fromelf.exe --bin --output ./output/HFEASY.bin ./output/HFEASY.axf</UserProg1Name>
-            <UserProg2Name>../tools/gen_upgrade_bin.exe ./output/HFEASY.bin ./output/HFEASY_UPGRADE.bin</UserProg2Name>
+            <UserProg1Name>fromelf.exe --bin --output ./build_lpxx00/HFEASY.bin ./build_lpxx00/HFEASY.axf</UserProg1Name>
+            <UserProg2Name>../tools/gen_upgrade_bin.exe ./build_lpxx00/HFEASY.bin ./build_lpxx00/HFEASY_UPGRADE.bin</UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
             <nStopA1X>0</nStopA1X>
@@ -375,7 +375,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls>--diag_suppress=494  --c99</MiscControls>
-              <Define>__KEIL_MDK__</Define>
+              <Define>__KEIL_MDK__ __LPXX00__</Define>
               <Undefine></Undefine>
               <IncludePath>..\sdk\1.52\include</IncludePath>
             </VariousControls>
@@ -477,21 +477,6 @@
               <FilePath>..\src\relay.c</FilePath>
             </File>
             <File>
-              <FileName>relay.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\src\relay.h</FilePath>
-            </File>
-            <File>
-              <FileName>dimmer.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\src\dimmer.h</FilePath>
-            </File>
-            <File>
-              <FileName>i2c.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\src\i2c.h</FilePath>
-            </File>
-            <File>
               <FileName>dimmer.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\dimmer.c</FilePath>
@@ -500,6 +485,11 @@
               <FileName>i2c.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\i2c.c</FilePath>
+            </File>
+            <File>
+              <FileName>network.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\network.c</FilePath>
             </File>
           </Files>
         </Group>
