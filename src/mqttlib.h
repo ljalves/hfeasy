@@ -135,7 +135,7 @@ typedef int ssize_t;
  * 
  * @returns The number of bytes sent if successful, an \ref MQTTErrors otherwise.
  */
-ssize_t mqtt_pal_sendall(mqtt_pal_socket_handle fd, char* buf, size_t len, int flags);
+//static ssize_t mqtt_pal_sendall(mqtt_pal_socket_handle fd, char* buf, size_t len, int flags);
 
 /**
  * @brief Non-blocking receive all the byte available.
@@ -148,7 +148,7 @@ ssize_t mqtt_pal_sendall(mqtt_pal_socket_handle fd, char* buf, size_t len, int f
  * 
  * @returns The number of bytes received if successful, an \ref MQTTErrors otherwise.
  */
-ssize_t mqtt_pal_recvall(mqtt_pal_socket_handle fd, char* buf, size_t bufsz, int flags);
+//static ssize_t mqtt_pal_recvall(mqtt_pal_socket_handle fd, char* buf, size_t bufsz, int flags);
 
 
  /**
@@ -1357,7 +1357,7 @@ enum MQTTErrors mqtt_sync(struct mqtt_client *client);
  * 
  * @returns \c MQTT_OK upon success, an \ref MQTTErrors otherwise.
  */
-enum MQTTErrors mqtt_init(struct mqtt_client *client,
+enum MQTTErrors hfeasy_mqtt_init(struct mqtt_client *client,
                           mqtt_pal_socket_handle sockfd,
                           uint8_t *sendbuf, size_t sendbufsz,
                           uint8_t *recvbuf, size_t recvbufsz,
@@ -1465,7 +1465,7 @@ void mqtt_reinit(struct mqtt_client* client,
  * 
  * @returns \c MQTT_OK upon success, an \ref MQTTErrors otherwise.
  */
-enum MQTTErrors mqtt_connect(struct mqtt_client *client,
+enum MQTTErrors hfeasy_mqtt_connect(struct mqtt_client *client,
                              const char* client_id,
                              const char* will_topic,
                              const void* will_message,
@@ -1497,7 +1497,7 @@ enum MQTTErrors mqtt_connect(struct mqtt_client *client,
  * 
  * @returns \c MQTT_OK upon success, an \ref MQTTErrors otherwise.
  */
-enum MQTTErrors mqtt_publish(struct mqtt_client *client,
+enum MQTTErrors hfeasy_mqtt_publish(struct mqtt_client *client,
                              const char* topic_name,
                              void* application_message,
                              size_t application_message_size,
@@ -1561,7 +1561,7 @@ ssize_t __mqtt_pubcomp(struct mqtt_client *client, uint16_t packet_id);
  * 
  * @returns \c MQTT_OK upon success, an \ref MQTTErrors otherwise. 
  */
-enum MQTTErrors mqtt_subscribe(struct mqtt_client *client,
+enum MQTTErrors hfeasy_mqtt_subscribe(struct mqtt_client *client,
                                const char* topic_name,
                                int max_qos_level);
 
@@ -1576,7 +1576,7 @@ enum MQTTErrors mqtt_subscribe(struct mqtt_client *client,
  * 
  * @returns \c MQTT_OK upon success, an \ref MQTTErrors otherwise. 
  */
-enum MQTTErrors mqtt_unsubscribe(struct mqtt_client *client,
+enum MQTTErrors hfeasy_mqtt_unsubscribe(struct mqtt_client *client,
                                  const char* topic_name);
 
 /**
@@ -1589,7 +1589,7 @@ enum MQTTErrors mqtt_unsubscribe(struct mqtt_client *client,
  * 
  * @returns \c MQTT_OK upon success, an \ref MQTTErrors otherwise.
  */
-enum MQTTErrors mqtt_ping(struct mqtt_client *client);
+enum MQTTErrors hfeasy_mqtt_ping(struct mqtt_client *client);
 
 /**
  * @brief Ping the broker without locking/unlocking the mutex. 

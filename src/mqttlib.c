@@ -111,7 +111,7 @@ uint16_t __mqtt_next_pid(struct mqtt_client *client) {
     return client->pid_lfsr;
 }
 
-enum MQTTErrors mqtt_init(struct mqtt_client *client,
+enum MQTTErrors hfeasy_mqtt_init(struct mqtt_client *client,
                mqtt_pal_socket_handle sockfd,
                uint8_t *sendbuf, size_t sendbufsz,
                uint8_t *recvbuf, size_t recvbufsz,
@@ -230,7 +230,7 @@ void mqtt_reinit(struct mqtt_client* client,
     msg = mqtt_mq_register(&client->mq, tmp);                       \
 
 
-enum MQTTErrors mqtt_connect(struct mqtt_client *client,
+enum MQTTErrors hfeasy_mqtt_connect(struct mqtt_client *client,
                      const char* client_id,
                      const char* will_topic,
                      const void* will_message,
@@ -268,7 +268,7 @@ enum MQTTErrors mqtt_connect(struct mqtt_client *client,
     return MQTT_OK;
 }
 
-enum MQTTErrors mqtt_publish(struct mqtt_client *client,
+enum MQTTErrors hfeasy_mqtt_publish(struct mqtt_client *client,
                      const char* topic_name,
                      void* application_message,
                      size_t application_message_size,
@@ -385,7 +385,7 @@ ssize_t __mqtt_pubcomp(struct mqtt_client *client, uint16_t packet_id) {
     return MQTT_OK;
 }
 
-enum MQTTErrors mqtt_subscribe(struct mqtt_client *client,
+enum MQTTErrors hfeasy_mqtt_subscribe(struct mqtt_client *client,
                        const char* topic_name,
                        int max_qos_level)
 {
@@ -415,7 +415,7 @@ enum MQTTErrors mqtt_subscribe(struct mqtt_client *client,
     return MQTT_OK;
 }
 
-enum MQTTErrors mqtt_unsubscribe(struct mqtt_client *client,
+enum MQTTErrors hfeasy_mqtt_unsubscribe(struct mqtt_client *client,
                          const char* topic_name)
 {
     uint16_t packet_id = __mqtt_next_pid(client);
@@ -442,7 +442,7 @@ enum MQTTErrors mqtt_unsubscribe(struct mqtt_client *client,
     return MQTT_OK;
 }
 
-enum MQTTErrors mqtt_ping(struct mqtt_client *client) {
+enum MQTTErrors hfeasy_mqtt_ping(struct mqtt_client *client) {
     enum MQTTErrors rv;
     MQTT_PAL_MUTEX_LOCK(&client->mutex);
     rv = __mqtt_ping(client);

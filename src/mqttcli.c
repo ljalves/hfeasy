@@ -238,12 +238,12 @@ static void USER_FUNC mqttcli_thread(void* client)
 				/* alloc rx/tx buffers */
 				txbuf = hfmem_malloc(MQTT_TX_BUF_SIZE);
 				if (txbuf == NULL) {
-					u_printf("failed to alloc tx buf mem\r\n");
+					log_write("failed to alloc tx buf mem\r\n");
 					STATE = MQTTCLI_STATE_RESET;
 				}
 				rxbuf = hfmem_malloc(MQTT_RX_BUF_SIZE);
 				if (rxbuf == NULL) {
-					u_printf("failed to alloc rx buf mem\r\n");
+					log_write("failed to alloc rx buf mem\r\n");
 					STATE = MQTTCLI_STATE_FREETX;
 				}
 				break;
@@ -251,17 +251,18 @@ static void USER_FUNC mqttcli_thread(void* client)
 			case MQTTCLI_STATE_CONNECT:
 				/* connect to server */
 				{
+					log_write("connect start");
 					int fd = mqttcli_connect();
 					if (fd >= 0) {
 						char *user = strlen(state->cfg.mqtt_server_user) == 0 ? NULL : state->cfg.mqtt_server_user;
 						char *pass = strlen(state->cfg.mqtt_server_pass) == 0 ? NULL : state->cfg.mqtt_server_pass;
 						/* connected, init mqtt */
-						mqtt_init(client, fd, txbuf, MQTT_TX_BUF_SIZE, rxbuf, MQTT_RX_BUF_SIZE, publish_callback);
+						hfeasy_mqtt_init(client, fd, txbuf, MQTT_TX_BUF_SIZE, rxbuf, MQTT_RX_BUF_SIZE, publish_callback);
 						
 						mqttcli_get_topic(topic, "tele", "LWT");
 						strcpy(lwm, "Offline");
 						
-						mqtt_connect(client, state->mac_addr_s, topic, lwm, strlen(lwm), user, pass, MQTT_CONNECT_WILL_RETAIN, 60);
+						hfeasy_mqtt_connect(client, state->mac_addr_s, topic, lwm, strlen(lwm), user, pass, MQTT_CONNECT_WILL_RETAIN, 60);
 						if (c->error != MQTT_OK) {
 							u_printf("error: %s\n", mqtt_error_str(c->error));
 							STATE = MQTTCLI_STATE_DISCONNECT;
@@ -272,20 +273,20 @@ static void USER_FUNC mqttcli_thread(void* client)
 							mqttcli_get_topic(topic, "cmnd", "#");
 
 							//u_printf("mqtt subscribe to '%s'\r\n", state->cfg.mqtt_sub_topic);
-							mqtt_subscribe(&mqttcli, topic, state->cfg.mqtt_qos);
+							hfeasy_mqtt_subscribe(&mqttcli, topic, state->cfg.mqtt_qos);
 							
 							
 							/* send online to the LWT topic */
 							mqttcli_get_topic(topic, "tele", "LWT");
 							strcpy(lwm, "Online");
-							mqtt_publish(&mqttcli, topic, lwm, strlen(lwm), MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
+							hfeasy_mqtt_publish(&mqttcli, topic, lwm, strlen(lwm), MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
 							
 							/* publish current state */
 							if (*gpio_pin(GPIO_RELAY) != HFM_NOPIN)
 								relay_publish_state();
 							if (*gpio_pin(GPIO_I2C_SCL) != HFM_NOPIN)
 								dimmer_publish_state();
-							
+							log_write("mqtt_connected");
 						}
 					} else {
 						msleep(1000);
@@ -297,6 +298,7 @@ static void USER_FUNC mqttcli_thread(void* client)
 				/* running state */
 				{
 					if (state->mqtt_ready == 0) {
+						log_write("mqtt_disconnected");
 						/* disconnect */
 						if (state->cfg.wifi_led & LED_CONFIG_MQTT)
 							led_ctrl("n1f1n1fsr");	/* disconnected = 2 blinks, 1sec interval */
@@ -306,7 +308,7 @@ static void USER_FUNC mqttcli_thread(void* client)
 						if (state->cfg.wifi_led & LED_CONFIG_MQTT)
 							led_ctrl("n1f1n1f1n1f"); /* ping = 3 blinks */
 						state->mqtt_ready = 1;
-						mqtt_ping(&mqttcli);
+						hfeasy_mqtt_ping(&mqttcli);
 					}
 					
 					if (mqtt_sync(c) != MQTT_OK) {
@@ -318,6 +320,7 @@ static void USER_FUNC mqttcli_thread(void* client)
 				break;
 			
 			case MQTTCLI_STATE_DISCONNECT:
+				mqtt_disconnect(&mqttcli);
 				close(c->socketfd);
 			case MQTTCLI_STATE_FREERX:
 				hfmem_free(rxbuf);
@@ -355,7 +358,7 @@ void USER_FUNC mqttcli_publish(char *value, char *sufix)
 	
 	if (state->mqtt_ready) {
 		mqttcli_get_topic(topic, "stat", sufix);
-		mqtt_publish(&mqttcli, topic, value, strlen(value), flags);
+		hfeasy_mqtt_publish(&mqttcli, topic, value, strlen(value), flags);
 		if (state->cfg.wifi_led & LED_CONFIG_MQTT)
 			led_ctrl("n1f1n1f"); /* publish = 2 blinks */
 	}
@@ -380,7 +383,7 @@ void USER_FUNC mqttcli_init(void)
 	/* start mqtt thread */
 	if (hfthread_create((PHFTHREAD_START_ROUTINE) mqttcli_thread,
 					"mqttcli", 256, &mqttcli, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS) {
-		u_printf("mqtt sync thread create failed!\n");
+		log_write("mqtt sync thread create failed!\n");
 	}
 
 	return;
