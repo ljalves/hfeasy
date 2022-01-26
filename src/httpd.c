@@ -2,7 +2,7 @@
 #include "hfeasy.h"
 
 #define HTTP_SERVER_PORT	81
-#define HTTPD_MAX_PAGES		15
+#define HTTPD_MAX_PAGES		20
 
 #define HTTPS_RECV_TIMEOUT 3000
 #define HTTPS_RECV_BUF_LEN 2048
@@ -95,6 +95,7 @@ int USER_FUNC httpd_add_page(const char *url, void (*callback)(char *url, char *
 	httpd_pages[i].url = url;
 	httpd_pages[i].callback = callback;
 	httpd_pages[i].type = type;
+	log_printf("httpd(%d) %s", i, (char*)url);
 	
 	return 0;
 }
@@ -106,6 +107,12 @@ static int USER_FUNC httpd_callback(char *url, char *rsp)
 	char buf[50], *a;
 	char *r = rsp;
 	int s;
+	
+	/* change internal page url to /hf */
+	if (strcmp(url, "/hf") == 0) {
+		strcpy(url, "/");
+		return -1;
+	}
 	
 	while (p->url != NULL) {
 		strncpy(buf, url, 50);
@@ -155,7 +162,7 @@ static int https_recv_data(int fd, char *buffer, int len, int timeout_ms)
 {
 	fd_set fdR;
 	struct timeval timeout;
-	int ret, tmpLen, contenLen, recvLen = 0;
+	int ret, tmpLen, contenLen=0, recvLen = 0;
 	
 	while(1) {
 		FD_ZERO(&fdR);
@@ -327,11 +334,14 @@ void USER_FUNC httpd_init(void)
 {
 	struct hfeasy_state* state = config_get_state();
 
+	if(hfnet_start_httpd(HFTHREAD_PRIORITIES_MID)!=HF_SUCCESS) {
+		log_write("start httpd fail");
+	}
 	
+#if 0
 	if(hfthread_create((PHFTHREAD_START_ROUTINE)hf_http_server, "hfhttp_server", 2048, NULL, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS) {
 		u_printf("error starting http server thread\r\n");
-	}
-
+#endif
 	
 	/* register url handler callback */
 	if (hfhttpd_url_callback_register(httpd_callback, state->cfg.http_auth) != HF_SUCCESS)
