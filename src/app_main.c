@@ -1,6 +1,6 @@
 /* HFeasy
 
-Copyright (c) 2019 Luis Alves
+Copyright (c) 2021 Luis Alves
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -29,39 +29,24 @@ const hfat_cmd_t user_define_at_cmds_table[] = {
 
 void app_init(void)
 {
+	log_printf("HFeasy started...");
 }
 
 int USER_FUNC app_main(void)
 {
 	hfdbg_set_level(0);
-
-	while(!hfnet_wifi_is_active())
-		msleep(100);
-		
-	u_printf("sdk version(%s), app_main start time is %s %s\n",
+	log_printf("sdk version(%s), app_main start time is %s %s",
 						hfsys_get_sdk_version(), __DATE__, __TIME__);
 	
-	if (hfnet_start_httpd(HFTHREAD_PRIORITIES_MID) != HF_SUCCESS) {
-		HF_Debug(DEBUG_WARN,"start httpd fail\n");
-	}
-	
 	config_init();
-	
+	network_init();
 	gpio_init();
-	
 	led_init();
-	
 	relay_init();
-
 	dimmer_init();
-
 	buzzer_init();
-	
 	timer_init();
-	
 	httpd_init();
 	mqttcli_init();
-		
 	return 1;
 }
-

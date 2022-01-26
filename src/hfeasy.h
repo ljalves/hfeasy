@@ -18,10 +18,11 @@
 #include "relay.h"
 #include "i2c.h"
 #include "dimmer.h"
+#include "network.h"
 
 
 #define HFEASY_VERSION_MAJOR	0
-#define HFEASY_VERSION_MINOR	10
+#define HFEASY_VERSION_MINOR	11
 
 
 enum {
