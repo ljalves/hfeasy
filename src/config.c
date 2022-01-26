@@ -21,9 +21,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <stdarg.h>
 #include "hfeasy.h"
 
-#define CONFIG_MAGIC_VER1  0xd3
+#define CONFIG_MAGIC_VER1  0xd2
 #define CONFIG_OFFSET      0x00
 #define CONFIG_SIZE        (sizeof(struct hfeasy_config))
 
@@ -33,8 +34,10 @@ static hftimer_handle_t reset_timer;
 void USER_FUNC get_module_name(char *buf);
 
 
-char log_buf[500];
+char log_buf[1000];
 
+
+#if defined(__LPXX00__)
 
 /* wifi_led, relay, but_push, but_togg, but_up, but_dn, buzz, i2c_ck, i2c_dt, inverted_outputs */
 const int gpio_default_config[DEVICE_END - 1][11]	= 
@@ -55,6 +58,20 @@ const int gpio_default_config[DEVICE_END - 1][11]	=
 	{ 11, 12, 18, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB100, 0 }
 };
 
+#elif defined(__LPXX30__)
+
+/* wifi_led, relay, but_push, but_togg, but_up, but_dn, buzz, i2c_ck, i2c_dt, inverted_outputs */
+const int gpio_default_config[DEVICE_END - 1][11]	= 
+{
+	/* plug */
+	{	29, 30, 28, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB130, GPIO_INV_LED},
+	
+};
+
+#else
+#error "platform not supported"
+#endif
+
 
 
 static void USER_FUNC reboot_timer_handler(hftimer_handle_t timer)
@@ -69,7 +86,7 @@ void USER_FUNC reboot(void)
 
 static const char *config_page_save =
 	"<!DOCTYPE html><html><head>"\
-	"<meta http-equiv=\"refresh\" content=\"5;url=/config\" />"\
+	"<meta http-equiv=\"refresh\" content=\"5;url=/\" />"\
 	"<title>HFeasy config v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
 	"Saving config to flash. Please wait...</body></html>";
 
@@ -86,17 +103,74 @@ static void USER_FUNC httpd_page_save(char *url, char *rsp)
 	sprintf(rsp, config_page_save, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR);
 }
 
+#if 0
+static const char *firmware_page =
+	"<!DOCTYPE html><html><head><title>HFeasy v%d.%d</title><link rel=\"stylesheet\" href=\"/styles.css\"></head><body>"\
+	"<h1>Firmare</h1><hr>"\
+	"<a href=\"config\">Go back</a>"\
+	"<form action=\"firmware\" method=\"GET\"><table>"\
+	"<th colspan=\"2\">Firmware"\
+	"<tr><td>Update firmware from: <td><input type=\"text\" name=\"fwurl\" value=\"%s\"><td><input type=\"submit\" value=\"Update\">"\
+	"</table></form>"\
+	"<form action=\"firmware\" method=\"GET\"><input type=\"submit\" value=\"Restart\" name=\"restart\"></form>"\
+	"</body></html>";
+
+static void USER_FUNC httpd_page_firmware(char *url, char *rsp)
+{
+	char tmp[100];
+	int ret;
+	
+	ret = httpd_arg_find(url, "fwurl", tmp);
+	if (ret > 0) {
+		httpc_get_fwfile(tmp);
+	}
+
+	sprintf(rsp, firmware_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
+		"https://github.com/ljalves/hfeasy/releases/download/0v9/HFEASY_UPGRADE.bin" 
+	);
+}
+#endif
+
+static const char *main_page =
+	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title><link rel=\"stylesheet\" href=\"/styles.css\"></head><body>"\
+	"<h1>HFeasy v%d.%d</h1><hr>"\
+	"<button id=\"btn_on\">ON</button>"\
+	"<button id=\"btn_off\">OFF</button>"\
+	"<hr>"\
+	"<table><tr>"\
+	"<tr><td><a href=\"config\">Module</a>"\
+	"<tr><td><a href=\"config_mqtt\">MQTT</a>"\
+	"<tr><td><a href=\"config_device\">Device</a>"\
+	"<tr><td><a href=\"config_gpio\">GPIO</a>"\
+	"<tr><td><a href=\"config_wifi\">WiFi</a>"\
+	"<tr><td><a href=\"config_network\">Network</a>"\
+	"<tr><td><a href=\"status\">Status</a>"\
+	"<tr><td><a href=\"log\">Logs</a>"\
+	"<tr><td><a href=\"iweb.html\">Upgrade</a>"\
+	"<tr><td><a href=\"hf\">HF</a>"\
+	"</table>"\
+	"<hr><form action=\"/save\" method=\"GET\"><input type=\"submit\" value=\"Save changes to flash and reboot\" name=\"save\"></form>"\
+	"<script type=\"text/javascript\">"\
+	"const bon = document.getElementById('btn_on');"\
+	"const boff = document.getElementById('btn_off');"\
+	"bon.addEventListener('click', async _ => { try { const response = await fetch('/state?sw=1', {method: 'get'}); } catch(err) { console.error(`Error: ${err}`); }});"\
+	"boff.addEventListener('click', async _ => { try { const response = await fetch('/state?sw=0', {method: 'get'}); } catch(err) { console.error(`Error: ${err}`); }});"\
+	"</script>"\
+	"</body></html>";
+
+static void USER_FUNC httpd_page_main(char *url, char *rsp)
+{
+	sprintf(rsp, main_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
+			HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR);
+
+	log_printf("page_size=%d\r\n", strlen(rsp));
+
+}
 
 static const char *config_page =
 	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title><link rel=\"stylesheet\" href=\"/styles.css\"></head><body>"\
 	"<h1>HFeasy config page</h1><hr>"\
-	"<table><tr>"\
-	"<td><a href=\"config_mqtt\">MQTT</a>"\
-	"<td><a href=\"config_device\">Device</a>"\
-	"<td><a href=\"config_gpio\">GPIO</a>"\
-	"<td><a href=\"status\">Status</a>"\
-	"<td><a href=\"iweb.html\">Upgrade</a>"\
-	"</table>"\
+	"<a href=\"/\">Go back</a>"\
 	"<form action=\"/config\" method=\"GET\"><table>"\
 	"<th colspan=\"2\">Module"\
 	"<tr><td>Module name<td><input type=\"text\" name=\"modname\" value=\"%s\">"\
@@ -112,8 +186,8 @@ static const char *config_page =
 	"</select>"\
 	"<tr><td>Power on state<td><input type=\"text\" name=\"pwron\" value=\"%d\"> (0=off, >0=on; dimmer: level=0~128)"\
 	"</table><input type=\"submit\" value=\"Apply\"></form>"\
-	"<hr><form action=\"/save\" method=\"GET\"><input type=\"submit\" value=\"Save changes to flash and reboot\" name=\"save\"></form>"\
 	"</body></html>";
+
 
 static void USER_FUNC httpd_page_config(char *url, char *rsp)
 {
@@ -166,14 +240,14 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 		led_ctrl("f");
 	}	
 	
-	u_printf("page_size=%d\r\n", strlen(rsp));
+	log_printf("page_size=%d\r\n", strlen(rsp));
 }
 
 
 static const char *config_page_mqtt =
 	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
 	"<h1>HFeasy MQTT config page</h1><hr>"\
-	"<a href=\"config\">Go back</a>"\
+	"<a href=\"/\">Go back</a>"\
 	"<form action=\"/config_mqtt\" method=\"GET\"><table>"\
 	"<TH colspan=\"2\">MQTT client"\
 	"<TR><TD>Server IP<TD><input type=\"text\" name=\"host\" value=\"%s\">"\
@@ -198,9 +272,12 @@ static void USER_FUNC httpd_page_config_mqtt(char *url, char *rsp)
 		strcpy(state.cfg.mqtt_server_hostname, tmp);
 	
 	ret = httpd_arg_find(url, "port", tmp);
-	if (ret > 0)
+	if (ret > 0) {
 		state.cfg.mqtt_server_port = atoi(tmp);
-
+		if (state.cfg.mqtt_server_port == 0)
+			state.mqtt_ready = 0;
+	}
+	
 	ret = httpd_arg_find(url, "user", tmp);
 	if (ret > 0)
 		strcpy(state.cfg.mqtt_server_user, tmp);
@@ -245,19 +322,22 @@ static void USER_FUNC httpd_page_config_mqtt(char *url, char *rsp)
 	u_printf("page_size=%d\r\n", strlen(rsp));
 }
 
-
 static const char *config_page_device =
 	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
 	"<h1>HFeasy device selection</h1><hr>"\
-	"<a href=\"/config\">Go back</a>"\
+	"<a href=\"/\">Go back</a>"\
 	"<form action=\"/config_device\" method=\"GET\"><table>"\
 	"<TR><TD>Device<TD><select name=\"device\">"\
-	"<option %s value=0>custom</option>"\
+	"<option %s value=0>custom</option>"
+#if defined(__LPXX00__)
 	"<option %s value=1>module</option>"\
 	"<option %s value=2>plug</option>"\
 	"<option %s value=3>us_dimmer</option>"\
 	"<option %s value=4>us_wall_sw</option>"\
-	"<option %s value=5>g-homa</option>"\
+	"<option %s value=5>g-homa</option>"
+#elif defined(__LPXX30__)
+	"<option %s value=1>plug</option>"
+#endif
 	"</select>"\
 	"<TD><input type=\"submit\" value=\"Change device\">"\
 	"</table></form>"
@@ -273,45 +353,54 @@ static void USER_FUNC httpd_page_config_device(char *url, char *rsp)
 		state.cfg.device = atoi(tmp);
 		if (state.cfg.device >= DEVICE_END)
 			state.cfg.device = DEVICE_CUSTOM;
-		
+	
+#ifdef __LPXX00__1
 		relay_deinit();
 		led_deinit();
 		dimmer_deinit();
 		buzzer_deinit();
 		gpio_deinit();
-		
+#endif
+
 		/* apply device default gpio config */
 		if (state.cfg.device > DEVICE_CUSTOM) {
 			memcpy(state.cfg.gpio_config, gpio_default_config[state.cfg.device - 1], sizeof(state.cfg.gpio_config));
 		}
 
-		gpio_init();
+#ifdef __LPXX00__1
+		hfeasy_gpio_init();
 		relay_init();
 		led_init();
 		dimmer_init();
 		buzzer_init();
+#endif
 
 	}
 
-	sprintf(rsp, config_page_device, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
-		state.cfg.device == 0 ? "selected" : "",
-		state.cfg.device == 1 ? "selected" : "",
-		state.cfg.device == 2 ? "selected" : "",
-		state.cfg.device == 3 ? "selected" : "",
-		state.cfg.device == 4 ? "selected" : "",
-		state.cfg.device == 5 ? "selected" : ""
+	sprintf(rsp, config_page_device, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR
+		,state.cfg.device == 0 ? "selected" : ""
+		,state.cfg.device == 1 ? "selected" : ""
+#ifdef __LPXX00__
+		,state.cfg.device == 2 ? "selected" : ""
+		,state.cfg.device == 3 ? "selected" : ""
+		,state.cfg.device == 4 ? "selected" : ""
+		,state.cfg.device == 5 ? "selected" : ""
+#endif
 	);
 }
-
 
 static const char *config_page_gpio =
 	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
 	"<h1>HFeasy GPIO config</h1><hr>"\
-	"<a href=\"config\">Go back</a>"\
+	"<a href=\"/\">Go back</a>"\
 	"<form action=\"/config_gpio\" method=\"GET\"><table>"\
-	"<TR><TD>Module type<TD><select %s name=\"hfmod\">"\
+	"<TR><TD>Module type<TD><select %s name=\"hfmod\">"
+#if defined(__LPXX00__)
 	"<option %s value=0>LPB100</option>"\
-	"<option %s value=4>LPT100F</option>"\
+	"<option %s value=4>LPT100F</option>"
+#elif defined(__LPXX30__)
+	"<option %s value=0>LPB130</option>"
+#endif
 	"</select>"\
 	"</table>"\
 	"<br>"\
@@ -338,12 +427,14 @@ static void USER_FUNC httpd_page_config_gpio(char *url, char *rsp)
 		ret = httpd_arg_find(url, "hfmod", tmp);
 		if (ret > 0) {
 
+#ifdef __LPXX00__1
 			relay_deinit();
 			led_deinit();
 			dimmer_deinit();
 			buzzer_deinit();
 			gpio_deinit();
-
+#endif
+			
 			state.cfg.gpio_config[9] = atoi(tmp);
 		
 			for (i = 0; i < 9; i++) {
@@ -367,11 +458,13 @@ static void USER_FUNC httpd_page_config_gpio(char *url, char *rsp)
 					state.cfg.gpio_config[10] |= GPIO_INV_RELAY;
 			}
 
-			gpio_init();
+#ifdef __LPXX00__1
+			hfeasy_gpio_init();
 			relay_init();
 			led_init();
 			dimmer_init();
 			buzzer_deinit();
+#endif
 
 		}
 	}
@@ -379,9 +472,12 @@ static void USER_FUNC httpd_page_config_gpio(char *url, char *rsp)
 	sprintf(rsp, config_page_gpio, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
 		
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled",
+#if defined (__LPXX00__)
 		state.cfg.gpio_config[9] == HFM_TYPE_LPB100 ? "selected" : "",
 		state.cfg.gpio_config[9] == HFM_TYPE_LPT100F ? "selected" : "",
-
+#elif defined(__LPXX30__)
+		state.cfg.gpio_config[9] == HFM_TYPE_LPB130 ? "selected" : "",
+#endif
 		/* gpios*/
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[0],
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[10] & GPIO_INV_LED ? "checked": "",
@@ -398,6 +494,7 @@ static void USER_FUNC httpd_page_config_gpio(char *url, char *rsp)
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[8],
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled"
 	);
+	log_printf("page_size=%d\r\n", strlen(rsp));
 }
 
 
@@ -432,7 +529,7 @@ static void get_reset_reason(uint32_t r, char *s)
 static const char *status_page =
 	"<!DOCTYPE html><html><head><title>HFeasy status v%d.%d</title></head><body>"\
 	"<h1>HF Easy v%d.%d module status</h1><hr>"\
-	"<a href=\"config\">Go back</a>"\
+	"<a href=\"/\">Go back</a>"\
   "<h2>System</h2><br>"\
 	"Reset flags: %08x, reason: %s<br>Free memory: %u bytes<br>"\
 	"Uptime: %s"\
@@ -470,7 +567,7 @@ static void USER_FUNC httpd_page_status(char *url, char *rsp)
 			m = i % 60;
 			i /= 60;
 			h = i;
-			sprintf(cd_off, "%dh%dm%ds", h, m, s);
+			sprintf(cd_off, "%dh%dm%ds", (int)h, (int)m, (int)s);
 		}
 	} else {
 		sprintf(cd_off, "disabled");
@@ -486,7 +583,7 @@ static void USER_FUNC httpd_page_status(char *url, char *rsp)
 			m = i % 60;
 			i /= 60;
 			h = i;
-			sprintf(cd_on, "%dh%dm%ds", h, m, s);
+			sprintf(cd_on, "%dh%dm%ds", (int)h, (int)m, (int)s);
 		}
 	} else {
 		sprintf(cd_on, "disabled");
@@ -499,7 +596,7 @@ static void USER_FUNC httpd_page_status(char *url, char *rsp)
 	i /= 60;
 	h = i % 24;
 	i /= 24;
-	sprintf(uptime, "%d days %dh%dm%ds", i, h, m, s);
+	sprintf(uptime, "%d days %dh%dm%ds", (int)i, (int)h, (int)m, (int)s);
 	
 	sprintf(rsp, status_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
 					HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
@@ -540,6 +637,7 @@ void log_read(uint32_t line, char *txt)
 static const char *log_page =
 	"<!DOCTYPE html><html><head><title>HFeasy v%d.%d</title></head><body>"\
 	"<h1>HF Easy v%d.%d log</h1><hr>"\
+	"<a href=\"/\">Go back</a><hr>"\
 	"%s"\
   "</body></html>";
 
@@ -547,12 +645,39 @@ void log_write(char *s)
 {
 	static char *p = log_buf;
 	int i;
-	i = sprintf(p, "%s<br>", s);
-	if (i >= 0)
-		p += i;
+	char *f;
+	static unsigned int line = 0;
+	char buf[200];
 	
+	sprintf(buf, "%d: %s<br>", line++, s);
+
+	while ((p - log_buf) > (sizeof(log_buf) - (strlen(buf)+1))) {
+		f = strstr(log_buf, "<br>");
+		f += 4;
+		p = log_buf;
+		for (i = strlen(f)+1; i > 0; i--)
+			*(p++) = *(f++);
+		p--;
+	}
+
+	strcpy(p, buf);
+	p+=strlen(buf);
 }
 
+int log_printf(const char *fmt, ...)
+{
+    char buf[200];
+    int ret;
+    va_list ap;
+
+    va_start(ap, fmt);
+    ret = vsprintf(buf, fmt, ap);
+    va_end(ap);
+    if (ret > 0) {
+        log_write(buf);
+    }
+    return ret;
+}
 
 static void USER_FUNC httpd_page_log(char *url, char *rsp)
 {
@@ -579,13 +704,14 @@ void USER_FUNC get_sta_settings(char *buf)
 }
 
 
-static int USER_FUNC hfsys_event_callback(uint32_t event_id, void *param)
+static int sys_event_callback(uint32_t event_id, void *param)
 {
 	char tmp[50];
+	log_printf("cbk id=%d", event_id);
 
 	switch(event_id) {
 		case HFE_WIFI_STA_CONNECTED:
-			u_printf("wifi sta connected!\r\n");
+			log_printf("wifi sta connected!\r\n");
 			led_ctrl("n51f51r");
 		
 			/* check if static ip */
@@ -597,7 +723,7 @@ static int USER_FUNC hfsys_event_callback(uint32_t event_id, void *param)
 			
 		case HFE_WIFI_STA_DISCONNECTED:
 			state.has_ip = 0;
-			u_printf("wifi sta disconnected!\r\n");
+			log_printf("wifi sta disconnected!\r\n");
 			led_ctrl("n2f2r");
 			break;
 			
@@ -605,18 +731,18 @@ static int USER_FUNC hfsys_event_callback(uint32_t event_id, void *param)
 			{
 				uint32_t *p_ip;
 				p_ip = (uint32_t*) param;
-				u_printf("dhcp ok %08X!", *p_ip);
+				log_printf("dhcp ok %08X!", *p_ip);
 				state.has_ip = 1;
 				led_ctrl("f");
 			}
 			break;
 		
 		case HFE_SMTLK_OK:
-			u_printf("smartlink ok!\r\n");
+			//u_printf("smartlink ok!\r\n");
 			break;
 			
 		case HFE_CONFIG_RELOAD:
-			u_printf("reload!\r\n");
+			log_printf("reload!\r\n");
 			break;
 			
 		default:
@@ -683,7 +809,7 @@ void USER_FUNC get_module_name(char *buf)
 			return;
 		}
 	}
-	strcpy(buf, "LPx100");
+	strcpy(buf, "LPx130");
 }
 
 int USER_FUNC set_module_name(void)
@@ -737,12 +863,14 @@ void USER_FUNC config_init(void)
 	
 	state.reset_reason = hfsys_get_reset_reason();
 	
-	if(hfsys_register_system_event((hfsys_event_callback_t) hfsys_event_callback) != HF_SUCCESS)
-		HF_Debug(DEBUG_ERROR,"error registering system event callback\r\n");
+	if(hfsys_register_system_event(sys_event_callback) != HF_SUCCESS)
+		log_write("error registering system event callback");
+	log_write("sys cbk registered");
 
 	reset_timer = hftimer_create("reboot", 1000, false, HFTIMER_ID_RESET, reboot_timer_handler, 0);
 	
 	/* register webpages */
+	httpd_add_page("/", httpd_page_main, NULL);
 	httpd_add_page("/config", httpd_page_config, NULL);
 	httpd_add_page("/config_mqtt", httpd_page_config_mqtt, NULL);
 	httpd_add_page("/config_device", httpd_page_config_device, NULL);

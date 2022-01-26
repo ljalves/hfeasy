@@ -100,11 +100,15 @@ struct hfeasy_state {
 
 enum {
 	DEVICE_CUSTOM = 0,
+#if defined(__LPXX00__)
 	DEVICE_MODULE,
 	DEVICE_PLUG,
 	DEVICE_USDIMMER,
 	DEVICE_USWALLSW,
 	DEVICE_GHOMA,
+#elif defined(__LPXX30__)
+	DEVICE_PLUG,
+#endif
 	DEVICE_END
 };
 
@@ -115,6 +119,7 @@ void USER_FUNC reboot(void);
 struct hfeasy_state* USER_FUNC config_get_state(void);
 
 void log_write(char *s);
+int log_printf(const char *fmt, ...);
 
 
 #endif
