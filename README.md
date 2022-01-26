@@ -1,5 +1,5 @@
 # hfeasy
-HF-LPx100/LPB130 firmware for Ankuoo devices
+Firmware for devices using the HF-LPx100 or LPB130 modules.
 
 You can contribute to this project by:
 - Developing code and submit PR's
