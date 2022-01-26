@@ -1,6 +1,7 @@
-projects/output/
+projects/build_*/
 *.bak
 *.uvgui.*
+*.uvguix.*
 *.uvopt
 *.dep
 *~
