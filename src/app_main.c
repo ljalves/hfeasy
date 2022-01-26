@@ -40,7 +40,7 @@ int USER_FUNC app_main(void)
 	
 	config_init();
 	network_init();
-	gpio_init();
+	hfeasy_gpio_init();
 	led_init();
 	relay_init();
 	dimmer_init();

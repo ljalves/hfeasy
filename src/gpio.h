@@ -3,6 +3,11 @@
 
 #include <hsf.h>
 
+#ifndef HFPIO_PULLUP
+#define HFPIO_PULLUP 0
+#endif
+
+
 enum {
 	GPIO_LED_WIFI = HFGPIO_F_USER_DEFINE,
 	GPIO_RELAY,
@@ -20,7 +25,7 @@ enum {
 #define GPIO_INV_RELAY 2
 
 
-void USER_FUNC gpio_init(void);
+void USER_FUNC hfeasy_gpio_init(void);
 void USER_FUNC gpio_deinit(void);
 int USER_FUNC gpio_get_state(int fid);
 int *gpio_pin(int n);

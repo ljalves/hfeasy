@@ -23,6 +23,9 @@ SOFTWARE.
 
 #include "hfeasy.h"
 
+
+#if defined(__LPXX00__)
+
 const int gpio_lpt100[11] =
 {
 	HFM_NOPIN,
@@ -106,8 +109,9 @@ const int gpio_lpb100[49] =
 	HFM_PIN48,
 };
 
+#define NR_MODULES 5
 
-const int *gpio_module_types[5] = {
+const int *gpio_module_types[NR_MODULES] = {
 	gpio_lpb100,
 	gpio_lpt100,
 	NULL,
@@ -115,7 +119,13 @@ const int *gpio_module_types[5] = {
 	gpio_lpt100f,
 };
 
-const int *gpio = NULL;
+const int gpio_module_nrpins[NR_MODULES] = {
+	48,
+	10,
+	0,
+	0,
+	10
+};
 
 int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
 {
@@ -164,7 +174,110 @@ int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
 	HFM_NOPIN,		/* i2c dt */
 };
 
+#elif defined(__LPXX30__)
 
+int gpio_lpb130[35] = 
+{
+	HFM_NOPIN,
+	HFM_NOPIN, //HFM_PIN1, GND
+	HFM_NOPIN, //HFM_PIN2, N.C.
+	HFM_NOPIN, //HFM_PIN3, N.C.
+	LPx30_GPIO21, //HFM_PIN4,
+	LPx30_GPIO5, //HFM_PIN5,
+	LPx30_GPIO4, //HFM_PIN6,
+	LPx30_GPADC0, //HFM_PIN7,
+	HFM_NOPIN, //HFM_PIN8, N.C.
+	HFM_NOPIN, //HFM_PIN9, DVDD3V3
+	HFM_NOPIN, //HFM_PIN10, N.C.
+	LPx30_GPIO3, //HFM_PIN11,
+	LPx30_GPIO7, //HFM_PIN12,
+	LPx30_GPIO13, //HFM_PIN13,
+	LPx30_GPIO12, //HFM_PIN14,
+	LPx30_GPIO0, //HFM_PIN15,
+	LPx30_GPIO9, //HFM_PIN16,
+	HFM_NOPIN, //HFM_PIN17, GND
+	HFM_NOPIN, //HFM_PIN18, GND
+	LPx30_GPIO26, //HFM_PIN19, UART1_RX
+	HFM_NOPIN, //HFM_PIN20, DVDD3V3
+	LPx30_GPIO27, //HFM_PIN21, UART1_TX
+	HFGPIO_F_USBDM, //HFM_PIN22,
+	HFGPIO_F_USBDP, //HFM_PIN23, PWM1
+	HFM_NOPIN, //HFM_PIN24, N.C.
+	LPx30_GPIO2, //HFM_PIN25, UART0_TX
+	LPx30_GPIO23, //HFM_PIN26, UART0_RTS
+	LPx30_GPIO1, //HFM_PIN27, UART0_RX
+	LPx30_GPIO22, //HFM_PIN28, UART0_CTS, PWM0
+	LPx30_GPIO8, //HFM_PIN29,
+	LPx30_GPIO24, //HFM_PIN30, PWM2
+	LPx30_GPIO25, //HFM_PIN31, PWM3
+	HFM_NOPIN, //HFM_PIN32, N.C.
+	HFM_NOPIN, //HFM_PIN33, nRESET
+	HFM_NOPIN  //HFM_PIN34, GND
+};
+
+#define NR_MODULES 1
+int *gpio_module_types[NR_MODULES] = {
+	gpio_lpb130,
+};
+
+const int gpio_module_nrpins[NR_MODULES] = {
+	34,
+};
+
+int g_module_id = HFM_TYPE_LPB130;
+
+int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
+{
+	HFM_NOPIN,		//HFGPIO_F_JTAG_TCK
+	HFM_NOPIN,		//HFGPIO_F_JTAG_TDO
+	HFM_NOPIN,		//HFGPIO_F_JTAG_TDI
+	HFM_NOPIN,		//HFGPIO_F_JTAG_TMS
+	HFM_NOPIN,		//HFGPIO_F_USBDP
+	HFM_NOPIN,		//HFGPIO_F_USBDM
+	LPx30_GPIO2,	//HFGPIO_F_UART0_TX
+	LPx30_GPIO23,	//HFGPIO_F_UART0_RTS
+	LPx30_GPIO1,	//HFGPIO_F_UART0_RX
+	LPx30_GPIO22,	//HFGPIO_F_UART0_CTS
+	
+	HFM_NOPIN,  	//HFGPIO_F_SPI_MISO
+	HFM_NOPIN,	  	//HFGPIO_F_SPI_CLK
+	HFM_NOPIN,	  	//HFGPIO_F_SPI_CS
+	HFM_NOPIN,  	//HFGPIO_F_SPI_MOSI
+	
+	HFM_NOPIN,		//HFGPIO_F_UART1_TX,
+	HFM_NOPIN,		//HFGPIO_F_UART1_RTS,
+	HFM_NOPIN,		//HFGPIO_F_UART1_RX,
+	HFM_NOPIN,		//HFGPIO_F_UART1_CTS,
+	
+	LPx30_GPIO8,	//HFGPIO_F_NLINK
+	LPx30_GPIO24,	//HFGPIO_F_NREADY
+	LPx30_GPIO25,	//HFGPIO_F_NRELOAD
+	HFM_NOPIN,	    //HFGPIO_F_SLEEP_RQ
+	HFM_NOPIN,	    //HFGPIO_F_SLEEP_ON
+	
+	HFM_NOPIN,	    //HFGPIO_F_WPS
+	HFM_NOPIN,		//HFGPIO_F_RESERVE1
+	HFM_NOPIN,		//HFGPIO_F_RESERVE2
+	HFM_NOPIN,		//HFGPIO_F_RESERVE3
+	HFM_NOPIN,		//HFGPIO_F_RESERVE4
+	HFM_NOPIN,		//HFGPIO_F_RESERVE5
+	
+	HFM_NOPIN,		/* led wifi */
+	HFM_NOPIN,		/* relay */
+	HFM_NOPIN,		/* push button */
+	HFM_NOPIN,		/* toggle button */
+	HFM_NOPIN,		/* button up */
+	HFM_NOPIN,		/* button dw */
+	HFM_NOPIN,		/* buzzer */
+	HFM_NOPIN,		/* i2c ck */
+	HFM_NOPIN,		/* i2c dt */
+};
+
+#else
+#error "platform not supported"
+#endif
+
+const int *gpio = NULL;
 
 static hftimer_handle_t debounce_timer, recovery_timer;
 static volatile uint8_t key_counter = 0, recovery_counter = 0;
@@ -281,6 +394,8 @@ static void USER_FUNC recovery_timer_handler(hftimer_handle_t timer)
 
 static int prev_sw_state;
 
+volatile static int irq_flag = 0;
+
 static void USER_FUNC debounce_timer_handler(hftimer_handle_t timer)
 {
 	struct hfeasy_state *state = config_get_state();
@@ -330,24 +445,46 @@ static void USER_FUNC switch_irqhandler_push(uint32_t arg1, uint32_t arg2)
 
 	if (key_counter == 0) {
 		key_counter++;
-		
 		if (state->func_state & FUNC_RELAY)
-			relay_set(RELAY_TOGGLE, RELAY_SRC_SWITCH);
+			irq_flag |= 2;
+			//relay_set(RELAY_TOGGLE, RELAY_SRC_SWITCH);
 
 		if (state->func_state & FUNC_DIMMER)
-			dimmer_set(DIMMER_TOGGLE, RELAY_SRC_SWITCH);
+			irq_flag |= 4;
+			//dimmer_set(DIMMER_TOGGLE, RELAY_SRC_SWITCH);
 		
 	}
-	hftimer_start(debounce_timer);
+	irq_flag |= 1;//hftimer_start(debounce_timer);
 }
 
 
-void USER_FUNC gpio_init(void)
+void button_handler(void)
+{
+	while(1) {
+		if (irq_flag & 1) {
+			hftimer_start(debounce_timer);
+			irq_flag &= ~1;
+		}
+		if (irq_flag & 2) {
+			relay_set(RELAY_TOGGLE, RELAY_SRC_SWITCH);
+			irq_flag &= ~2;
+		}
+		if (irq_flag & 4) {
+			dimmer_set(DIMMER_TOGGLE, RELAY_SRC_SWITCH);
+			irq_flag &= ~4;
+		}
+		msleep(1);
+	}
+}
+
+void USER_FUNC hfeasy_gpio_init(void)
 {
 	struct hfeasy_state *state = config_get_state();
 	int module_type, i, j;
 
 	module_type = state->cfg.gpio_config[9];
+	if (module_type > NR_MODULES)
+		return;
 
 	gpio = gpio_module_types[module_type];
 	if (gpio == NULL) {
@@ -357,6 +494,9 @@ void USER_FUNC gpio_init(void)
 
 	/* init pin mapping */
 	for (i = 0; i < 9; i++) {
+		if (state->cfg.gpio_config[i] > gpio_module_nrpins[module_type])
+			state->cfg.gpio_config[i] = 0;
+		
 		hf_gpio_fid_to_pid_map_table[HFGPIO_F_USER_DEFINE + i] = gpio[state->cfg.gpio_config[i]];
 		if (hf_gpio_fid_to_pid_map_table[HFGPIO_F_USER_DEFINE + i] == HFM_NOPIN)
 			continue;
@@ -377,7 +517,7 @@ void USER_FUNC gpio_init(void)
 		if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH_TOGGLE,
 					HFM_IO_TYPE_INPUT | HFPIO_IT_EDGE | HFPIO_PULLUP,
 					switch_irqhandler_toggle, 1) != HF_SUCCESS)
-			u_printf("failed to add switch interrupt\n");
+			log_printf("failed to add switch interrupt\n");
 		state->func_state |= FUNC_BTN_TOG;
 	}
 
@@ -386,13 +526,19 @@ void USER_FUNC gpio_init(void)
 		if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH_PUSH,
 					HFM_IO_TYPE_INPUT | HFPIO_IT_FALL_EDGE | HFPIO_PULLUP,
 					switch_irqhandler_push, 1) != HF_SUCCESS)
-			u_printf("failed to add switch interrupt\n");
+			log_write("failed to add switch interrupt\n");
+		log_write("added switch interrupt\n");
 		state->func_state |= FUNC_BTN_PUSH;
 	}
 	
 	debounce_timer = hftimer_create("debouncer", 50, false, HFTIMER_ID_DEBOUNCE, debounce_timer_handler, 0);
 	recovery_timer = hftimer_create("recovery", 3000, false, HFTIMER_ID_RECOVERY, recovery_timer_handler, 0);
 
+	if(hfthread_create((PHFTHREAD_START_ROUTINE)button_handler, "button_handler", 64, NULL, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS) {
+		u_printf("error starting button_handler thread\r\n");
+	}
+
+	
 	httpd_add_page("/state", switch_state_page, NULL);
 	httpd_add_page("/ctrl", switch_ctrl_page, NULL);
 }
