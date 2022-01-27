@@ -69,7 +69,7 @@ static void USER_FUNC httpd_page_config_wifi(char *url, char *rsp)
 		sprintf(tmp, "AT+WSSSID=%s\r\n", ssid);
 		hfat_send_cmd(tmp, sizeof(tmp), ans, 150);
 
-		sprintf(tmp, "AT+WSKEY=%s,%s,%s\r\n", auth==0?"OPEN":(auth==1?"WPAPSK":(auth==2?"WPA2PSK":"")), enc==0?"NONE":(enc==1?"TKIP":(enc==3?"AES":"")), pass);
+		sprintf(tmp, "AT+WSKEY=%s,%s,%s\r\n", auth==0?"OPEN":(auth==1?"WPAPSK":(auth==2?"WPA2PSK":"")), enc==0?"NONE":(enc==1?"TKIP":(enc==2?"AES":"")), pass);
 		hfat_send_cmd(tmp, sizeof(tmp), ans, 150);
 		
 	} else {
