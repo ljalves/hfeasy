@@ -165,7 +165,7 @@ static void USER_FUNC httpd_page_config_network(char *url, char *rsp)
 {
 	char tmp[150], ans[150];
 	char *words[6] = {NULL};
-	char dhcp, ip[20], mask[20], gw[20], dns[20];
+	char dhcp = 0, ip[20], mask[20], gw[20], dns[20];
 	int ret;
 	
 	strcpy(ip, "");
@@ -175,12 +175,10 @@ static void USER_FUNC httpd_page_config_network(char *url, char *rsp)
 
 	ret = httpd_arg_find(url, "apply", tmp);
 	if (ret > 0) {
-		dhcp = 0;
 		ret = httpd_arg_find(url, "dhcp", tmp);
 		if (ret > 0) {
 			dhcp = 1;
 			hfat_send_cmd("AT+WANN=DHCP\r\n", sizeof("AT+WANN=DHCP\r\n"), ans, 64);
-			
 		} else {
 			ret = httpd_arg_find(url, "ip", tmp);
 			if (ret > 0)
@@ -209,11 +207,9 @@ static void USER_FUNC httpd_page_config_network(char *url, char *rsp)
 		hfat_send_cmd("AT+WANN\r\n", sizeof("AT+WANN\r\n"), ans, 150);
 		if (hfat_get_words(ans, words, 5) > 0) {
 			if ((ans[0]=='+') && (ans[1]=='o') && (ans[2]=='k')) {
-				if (strcmp(words[1], "DHCP") == 0) {
+				if (strcmp(words[1], "DHCP") == 0)
 					dhcp = 1;
-				} else {
-					dhcp = 0;
-				}
+				
 				strcpy(ip, words[2]);
 				strcpy(mask, words[3]);
 				strcpy(gw, words[4]);
