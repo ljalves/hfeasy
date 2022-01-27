@@ -24,15 +24,12 @@ SOFTWARE.
 #include <stdarg.h>
 #include "hfeasy.h"
 
-#define CONFIG_MAGIC_VER1  0xd2
+#define CONFIG_MAGIC_VER1  0xd1
 #define CONFIG_OFFSET      0x00
 #define CONFIG_SIZE        (sizeof(struct hfeasy_config))
 
 struct hfeasy_state state;
 static hftimer_handle_t reset_timer;
-
-void USER_FUNC get_module_name(char *buf);
-
 
 char log_buf[1000];
 
@@ -132,7 +129,7 @@ static void USER_FUNC httpd_page_firmware(char *url, char *rsp)
 #endif
 
 static const char *main_page =
-	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title><link rel=\"stylesheet\" href=\"/styles.css\"></head><body>"\
+	"<!DOCTYPE html><html><head><title>HFeasy v%d.%d</title><link rel=\"stylesheet\" href=\"/styles.css\"></head><body>"\
 	"<h1>HFeasy v%d.%d</h1><hr>"\
 	"<button id=\"btn_on\">ON</button>"\
 	"<button id=\"btn_off\">OFF</button>"\
@@ -168,14 +165,15 @@ static void USER_FUNC httpd_page_main(char *url, char *rsp)
 }
 
 static const char *config_page =
-	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title><link rel=\"stylesheet\" href=\"/styles.css\"></head><body>"\
+	"<!DOCTYPE html><html><head><title>HFeasy v%d.%d</title><link rel=\"stylesheet\" href=\"/styles.css\"></head><body>"\
 	"<h1>HFeasy config page</h1><hr>"\
 	"<a href=\"/\">Go back</a>"\
 	"<form action=\"/config\" method=\"GET\"><table>"\
 	"<th colspan=\"2\">Module"\
-	"<tr><td>Module name<td><input type=\"text\" name=\"modname\" value=\"%s\">"\
-	"<tr><td>HTTP auth?<td><input type=\"checkbox\" name=\"http_auth\" value=\"1\" %s>"\
-	"<tr><td>Wifi LED (if supported)<td><select name=\"wifi_led\">"\
+	"<tr><td>Friendly name<td><input type=\"text\" name=\"fn\" value=\"%s\">"\
+	"<tr><td>Module name (id)<td><input type=\"text\" name=\"mn\" value=\"%s\">"\
+	"<tr><td>HTTP auth?<td><input type=\"checkbox\" name=\"auth\" value=\"1\" %s>"\
+	"<tr><td>Wifi LED (if supported)<td><select name=\"led\">"\
 	"<option value=\"0\"%s>Off</option>"\
 	"<option value=\"1\"%s>MQTT</option>"\
 	"<option value=\"2\"%s>HTTP</option>"\
@@ -194,23 +192,24 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 	char tmp[50];
 	int ret;
 	
-	ret = httpd_arg_find(url, "modname", tmp);
+	ret = httpd_arg_find(url, "fn", tmp);
 	if (ret > 0) {
-		strcpy(state.cfg.module_name, tmp);
+		if (tmp[0] != '\0')
+			strcpy(state.cfg.friendly_name, tmp);
 		
 		state.cfg.http_auth = 0;
-		ret = httpd_arg_find(url, "http_auth", tmp);
-		if (ret > 0) {
-			if (tmp[0] == '1')
-				state.cfg.http_auth = 1;
-		}		
-		
-	} else if (state.cfg.module_name[0] == '\0') {
-			get_module_name(state.cfg.module_name);
+		ret = httpd_arg_find(url, "auth", tmp);
+		if ((ret > 0) && (tmp[0] == '1'))
+			state.cfg.http_auth = 1;	
 	}
 
+	ret = httpd_arg_find(url, "mn", tmp);
+	if (ret > 0) {
+		if (tmp[0] != '\0')
+			strcpy(state.module_name, tmp);
+	}
 
-	ret = httpd_arg_find(url, "wifi_led", tmp);
+	ret = httpd_arg_find(url, "led", tmp);
 	if (ret > 0) {
 		state.cfg.wifi_led = atoi(tmp);
 		if (state.cfg.wifi_led >= LED_CONFIG_END)
@@ -223,7 +222,8 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 	}
 	
 	sprintf(rsp, config_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
-		state.cfg.module_name, state.cfg.http_auth == 1 ? "checked" : "",
+		state.cfg.friendly_name, state.module_name,
+		state.cfg.http_auth == 1 ? "checked" : "",
 		state.cfg.wifi_led == 0 ? "selected" : "",
 		state.cfg.wifi_led == 1 ? "selected" : "",
 		state.cfg.wifi_led == 2 ? "selected" : "",
@@ -245,7 +245,7 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 
 
 static const char *config_page_mqtt =
-	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
+	"<!DOCTYPE html><html><head><title>HFeasy v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
 	"<h1>HFeasy MQTT config page</h1><hr>"\
 	"<a href=\"/\">Go back</a>"\
 	"<form action=\"/config_mqtt\" method=\"GET\"><table>"\
@@ -305,13 +305,6 @@ static void USER_FUNC httpd_page_config_mqtt(char *url, char *rsp)
 	ret = httpd_arg_find(url, "off_val", tmp);
 	if (ret > 0)
 		strcpy(state.cfg.mqtt_off_value, tmp);
-
-	
-	ret = httpd_arg_find(url, "save", tmp);
-	if (ret > 0) {
-		config_save();
-		reboot();
-	}
 	
 	sprintf(rsp, config_page_mqtt, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
 					state.cfg.mqtt_server_hostname, state.cfg.mqtt_server_port,
@@ -323,7 +316,7 @@ static void USER_FUNC httpd_page_config_mqtt(char *url, char *rsp)
 }
 
 static const char *config_page_device =
-	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
+	"<!DOCTYPE html><html><head><title>HFeasy v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
 	"<h1>HFeasy device selection</h1><hr>"\
 	"<a href=\"/\">Go back</a>"\
 	"<form action=\"/config_device\" method=\"GET\"><table>"\
@@ -390,7 +383,7 @@ static void USER_FUNC httpd_page_config_device(char *url, char *rsp)
 }
 
 static const char *config_page_gpio =
-	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
+	"<!DOCTYPE html><html><head><title>HFeasy v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
 	"<h1>HFeasy GPIO config</h1><hr>"\
 	"<a href=\"/\">Go back</a>"\
 	"<form action=\"/config_gpio\" method=\"GET\"><table>"\
@@ -527,7 +520,7 @@ static void get_reset_reason(uint32_t r, char *s)
 }
 
 static const char *status_page =
-	"<!DOCTYPE html><html><head><title>HFeasy status v%d.%d</title></head><body>"\
+	"<!DOCTYPE html><html><head><title>HFeasy v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
 	"<h1>HF Easy v%d.%d module status</h1><hr>"\
 	"<a href=\"/\">Go back</a>"\
   "<h2>System</h2><br>"\
@@ -606,7 +599,7 @@ static void USER_FUNC httpd_page_status(char *url, char *rsp)
 					relay_change_src[state.relay_modifier & 3],
 					(state.relay_modifier >> 6) & 1, (state.relay_modifier >> 4) & 3,
 					cd_off, cd_on,
-					state.cfg.module_name,
+					state.module_name,
 					state.mqtt_ready ? "Connected" : "Disconnected");
 }
 
@@ -647,7 +640,7 @@ void log_write(char *s)
 	int i;
 	char *f;
 	static unsigned int line = 0;
-	char buf[200];
+	char buf[500];
 	
 	sprintf(buf, "%d: %s<br>", line++, s);
 
@@ -666,7 +659,7 @@ void log_write(char *s)
 
 int log_printf(const char *fmt, ...)
 {
-    char buf[200];
+    char buf[500];
     int ret;
     va_list ap;
 
@@ -789,11 +782,6 @@ static uint8_t USER_FUNC get_macaddr(void)
 	return ret;
 }
 
-void USER_FUNC config_save(void)
-{
-	hffile_userbin_write(CONFIG_OFFSET, (char*) &state.cfg, CONFIG_SIZE);
-	u_printf("saving config to flash. size=%d\r\n", CONFIG_SIZE);
-}
 
 
 void USER_FUNC get_module_name(char *buf)
@@ -814,47 +802,63 @@ void USER_FUNC get_module_name(char *buf)
 
 int USER_FUNC set_module_name(void)
 {
-	//char *words[3] = {NULL};
+	char *words[3] = {NULL};
 	char rsp[64] = {0};
 	char tmp[50];
 
 	/* module name not setup */
-	if (strlen(state.cfg.module_name) == 0)
+	if (strlen(state.module_name) == 0)
 		return 3;
 	
 	get_module_name(tmp);
 	/* module name already set */
-	if (strcmp(tmp, state.cfg.module_name) == 0)
+	if (strcmp(tmp, state.module_name) == 0)
 		return 2;
 	
-	sprintf(tmp, "AT+WRMID=%s\r\n", state.cfg.module_name);
+	sprintf(tmp, "AT+WRMID=%s\r\n", state.module_name);
 	hfat_send_cmd(tmp, strlen(tmp) + 1, rsp, 64);
-	if //((hfat_get_words(rsp, words, 1) > 0) && 
-			((rsp[0]=='+') && (rsp[1]=='o') && (rsp[2]=='k'))
-			return 1;
-	return 0;
+	if ((hfat_get_words(rsp, words, 1) > 0) && 
+			((rsp[0]=='+') && (rsp[1]=='o') && (rsp[2]=='k')))
+			return 0;
+	return 1;
+}
+
+void USER_FUNC config_save(void)
+{
+	set_module_name();
+	hffile_userbin_write(CONFIG_OFFSET, (char*) &state.cfg, CONFIG_SIZE);
+	u_printf("saving config to flash. size=%d\r\n", CONFIG_SIZE);
 }
 
 static void USER_FUNC config_load(uint8_t reset)
 {
 	memset(&state, 0, sizeof(struct hfeasy_state));
 	get_macaddr();
+	get_module_name(state.module_name);
+
 	if (!reset)
 		hffile_userbin_read(CONFIG_OFFSET, (char*) &state.cfg, CONFIG_SIZE);
 	
-	u_printf("loading config from flash. size=%d magic=%02x reset=%d\r\n", CONFIG_SIZE, state.cfg.ver, reset);
+	log_printf("loading config from flash. size=%d magic=%02x reset=%d\r\n", CONFIG_SIZE, state.cfg.ver, reset);
 	if (state.cfg.ver != CONFIG_MAGIC_VER1) {
+		/* set APSTA mode */
+		char rsp[64] = {0};
+		hfat_send_cmd("AT+WMODE=APSTA\r\n", sizeof("AT+WMODE=APSTA\r\n"), rsp, 32);
+
 		/* init config data */
 		memset(&state.cfg, 0, sizeof(struct hfeasy_config));
 		state.cfg.ver = CONFIG_MAGIC_VER1;
 		state.cfg.device = DEVICE_CUSTOM;
 		mqttcli_initcfg();
 		
+		strcpy(state.cfg.friendly_name, "HFEASY");
+		if (state.module_name[0] == '\0')
+			strcpy(state.module_name, "HFEASY");
+		
 		hffile_userbin_zero();
 		config_save();
+		reboot();
 	}
-	
-	set_module_name();
 }
 
 void USER_FUNC config_init(void)
@@ -863,7 +867,7 @@ void USER_FUNC config_init(void)
 	
 	state.reset_reason = hfsys_get_reset_reason();
 	
-	if(hfsys_register_system_event(sys_event_callback) != HF_SUCCESS)
+	if (hfsys_register_system_event(sys_event_callback) != HF_SUCCESS)
 		log_write("error registering system event callback");
 	log_write("sys cbk registered");
 

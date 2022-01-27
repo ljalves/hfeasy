@@ -5,7 +5,7 @@ void USER_FUNC relay_publish_state(void)
 {
 	struct hfeasy_state *state = config_get_state();
 	char *val = state->relay_state ? state->cfg.mqtt_on_value : state->cfg.mqtt_off_value;
-	mqttcli_publish(val, "power");
+	mqttcli_publish(val, "POWER");
 }
 
 
@@ -55,16 +55,14 @@ void USER_FUNC relay_set(uint8_t action, uint8_t source)
 			led_ctrl("n");
 		
 		set_relay_pin(1);
-		val = state->cfg.mqtt_on_value;
 	} else {
 		if (state->cfg.wifi_led == LED_CONFIG_RELAY)
 			led_ctrl("f");
 
 		set_relay_pin(0);
-		val = state->cfg.mqtt_off_value;
 	}
 	//hfsys_nvm_write(0, (char *) &state->relay_state, sizeof(state->relay_state));
-	mqttcli_publish(val, "power");
+	relay_publish_state();
 }
 
 

@@ -39,14 +39,17 @@ static void USER_FUNC convert_ascii(char *str)
 	out = str;
 	
 	while (*in != '\0') {
-		if (*in == '%') {
+		if (*in > 127) {
+			*(out++) = '?';
+			in++;
+		} else if (*in == '+') {
+			*(out++) = ' ';
+			in++;
+		} else if (*in == '%') {
 			memcpy(s, in + 1, 2);
 			c = strtol(s, NULL, 16);
 			*(out++) = c;
 			in += 3;
-		} else if (*in == '+') {
-			*(out++) = ' ';
-			in++;
 		} else {
 			*(out++) = *(in++);
 		}

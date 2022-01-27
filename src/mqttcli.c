@@ -109,35 +109,31 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 			int lvl = atoi(msg);
 			dimmer_set(lvl, RELAY_SRC_MQTT);
 		}
-		mqttcli_get_topic(t, "cmnd", "power");
+		mqttcli_get_topic(t, "cmnd", "POWER");
 		if (strcmp(topic_name, t) == 0) {
 			if (state->cfg.wifi_led & LED_CONFIG_MQTT)
 				led_ctrl("n1f"); /* got data = 1 blink */
 			
 			/* set dimmer on/off */
 			if (strcmp(cfg->mqtt_on_value, msg) == 0) {
-				if (state->relay_state != 1)
-					dimmer_set(0xff, RELAY_SRC_MQTT);
+				dimmer_set(0xff, RELAY_SRC_MQTT);
 			} else if (strcmp(cfg->mqtt_off_value, msg) == 0) {
-				if (state->relay_state != 0)
-					dimmer_set(0, RELAY_SRC_MQTT);
+				dimmer_set(0, RELAY_SRC_MQTT);
 			}
 		}
 	}
 
 	/* relay is setup */
 	if (*gpio_pin(GPIO_RELAY) != HFM_NOPIN) {
-		mqttcli_get_topic(t, "cmnd", "power");
+		mqttcli_get_topic(t, "cmnd", "POWER");
 		if (strcmp(topic_name, t) == 0) {
 			if (state->cfg.wifi_led & LED_CONFIG_MQTT)
 				led_ctrl("n1f"); /* got data = 1 blink */
 
 			if (strcmp(cfg->mqtt_on_value, msg) == 0) {
-				if (state->relay_state != 1)
-					relay_set(RELAY_ON, RELAY_SRC_MQTT);
+				relay_set(RELAY_ON, RELAY_SRC_MQTT);
 			} else if (strcmp(cfg->mqtt_off_value, msg) == 0) {
-				if (state->relay_state != 0)
-					relay_set(RELAY_OFF, RELAY_SRC_MQTT);
+				relay_set(RELAY_OFF, RELAY_SRC_MQTT);
 			}
 		}
 	}
@@ -218,7 +214,7 @@ static void USER_FUNC mqttcli_thread(void* client)
 	struct hfeasy_state *state = config_get_state();
 	struct mqtt_client *c = (struct mqtt_client*) client;
 	static uint8_t STATE = 0;
-	char topic[100];
+	char topic[60], msg[400];
 	char lwm[10];
 	
 	
@@ -264,22 +260,40 @@ static void USER_FUNC mqttcli_thread(void* client)
 						
 						hfeasy_mqtt_connect(client, state->mac_addr_s, topic, lwm, strlen(lwm), user, pass, MQTT_CONNECT_WILL_RETAIN, 60);
 						if (c->error != MQTT_OK) {
-							u_printf("error: %s\n", mqtt_error_str(c->error));
+							log_printf("error: %s\n", mqtt_error_str(c->error));
 							STATE = MQTTCLI_STATE_DISCONNECT;
 						} else {
+							char cmnd_t[60], stat_t[60], avail_t[60];
+							
 							STATE = MQTTCLI_STATE_RUN;
 							state->mqtt_ready = 1;
 
-							mqttcli_get_topic(topic, "cmnd", "#");
-
-							//u_printf("mqtt subscribe to '%s'\r\n", state->cfg.mqtt_sub_topic);
-							hfeasy_mqtt_subscribe(&mqttcli, topic, state->cfg.mqtt_qos);
-							
-							
 							/* send online to the LWT topic */
-							mqttcli_get_topic(topic, "tele", "LWT");
 							strcpy(lwm, "Online");
 							hfeasy_mqtt_publish(&mqttcli, topic, lwm, strlen(lwm), MQTT_PUBLISH_QOS_0 | MQTT_PUBLISH_RETAIN);
+
+							/* subscribe to 'cmnd' topic */
+							mqttcli_get_topic(topic, "cmnd", "#");
+							hfeasy_mqtt_subscribe(&mqttcli, topic, state->cfg.mqtt_qos);
+							
+							/* send auto-discovery msg */
+							mqttcli_get_topic(cmnd_t, "cmnd", "POWER");
+							mqttcli_get_topic(stat_t, "stat", "POWER");
+							mqttcli_get_topic(avail_t, "tele", "LWT");
+							sprintf(topic, "homeassistant/switch/%s/config", state->mac_addr_s);
+							const char *mqtt_discovery = "{\"name\": \"%s\", \"obj_id\": \"%s\", \"unique_id\": \"%s\", "\
+									"\"cmd_t\": \"%s\", \"stat_t\": \"%s\", "\
+									"\"avty_t\": \"%s\", \"pl_avail\": \"Online\", \"pl_not_avail\": \"Offline\", "\
+									"\"pl_on\": \"%s\", \"pl_off\": \"%s\", \"sw\": \"v%d.%d\"}";
+							sprintf(msg, mqtt_discovery,
+									state->cfg.friendly_name, state->module_name, state->mac_addr_s, cmnd_t, stat_t, avail_t,
+									state->cfg.mqtt_on_value, state->cfg.mqtt_off_value,
+									(int)HFEASY_VERSION_MAJOR, (int)HFEASY_VERSION_MINOR);
+
+							//sprintf(msg, "{\"name\": \"%s\", \"unique_id\": \"%s\", \"cmd_t\": \"%s\", \"stat_t\": \"%s\", \"pl_on\": \"%s\", \"pl_off\": \"%s\", \"sw\": \"v%d.%d\"}",
+							//				state->cfg.module_name, state->mac_addr_s, cmnd_t, stat_t, state->cfg.mqtt_on_value, state->cfg.mqtt_off_value, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR);
+							hfeasy_mqtt_publish(&mqttcli, topic, msg, strlen(msg), MQTT_PUBLISH_QOS_0);
+							log_printf("%d:%s", strlen(msg), msg);
 							
 							/* publish current state */
 							if (*gpio_pin(GPIO_RELAY) != HFM_NOPIN)
@@ -378,11 +392,9 @@ void USER_FUNC mqttcli_initcfg(void)
 
 void USER_FUNC mqttcli_init(void)
 {
-	struct hfeasy_state *state = config_get_state();
-	
 	/* start mqtt thread */
 	if (hfthread_create((PHFTHREAD_START_ROUTINE) mqttcli_thread,
-					"mqttcli", 256, &mqttcli, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS) {
+					"mqttcli", 1024, &mqttcli, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS) {
 		log_write("mqtt sync thread create failed!\n");
 	}
 

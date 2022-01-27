@@ -44,7 +44,7 @@ struct hfeasy_config {
 	char      mqtt_off_value[10];
 	
 	/* module */
-	char      module_name[30];
+	char      friendly_name[50];
 	char      http_auth;
 	uint8_t   wifi_led;
 
@@ -83,6 +83,8 @@ struct hfeasy_state {
 	uint16_t func_state;
 	
 	struct hfeasy_config cfg;
+	
+	char module_name[30];
 };
 
 
