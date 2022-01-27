@@ -7,6 +7,8 @@
 #define HTTPS_RECV_TIMEOUT 3000
 #define HTTPS_RECV_BUF_LEN 2048
 
+#define HTTPD_CORS_HEADER "Access-Control-Allow-Origin: *\r\n"
+
 static char https_recv_buf[HTTPS_RECV_BUF_LEN];
 
 #define HttpRspDataFormat      "HTTP/1.1 200 OK\r\n"\
@@ -18,7 +20,7 @@ static char https_recv_buf[HTTPS_RECV_BUF_LEN];
 
 
 static const char *http_header = "HTTP/1.1 200 OK\r\n"\
-"Content-type: text/%s\r\n"\
+"Content-type: text/%s\r\n%s"\
 "Server: HFEASY\r\n"
 "Connection: close\r\n\r\n";
 
@@ -109,6 +111,7 @@ int USER_FUNC httpd_add_page(const char *url, void (*callback)(char *url, char *
 
 static int USER_FUNC httpd_callback(char *url, char *rsp)
 {
+	struct hfeasy_state* state = config_get_state();
 	struct httpd_page *p = httpd_pages;
 	char buf[50], *a;
 	char *r = rsp;
@@ -128,9 +131,9 @@ static int USER_FUNC httpd_callback(char *url, char *rsp)
 			*a = '\0';
 		if (strcmp(p->url, buf) == 0) {
 			if (p->type != NULL)
-				s = sprintf(r, http_header, p->type);
+				s = sprintf(r, http_header, p->type, state->cfg.httpd_settings & HTTPD_CORS ? HTTPD_CORS_HEADER : "");
 			else
-				s = sprintf(r, http_header, "html");
+				s = sprintf(r, http_header, "html", state->cfg.httpd_settings & HTTPD_CORS ? HTTPD_CORS_HEADER : "");
 			r += s;
 			p->callback(url, r);
 			u_printf("'%s' size=%d\r\n", url, strlen(rsp));
@@ -245,14 +248,19 @@ static int https_recv_data(int fd, char *buffer, int len, int timeout_ms)
 		u_printf("url='%s' size=%d\r\n", url, strlen(url));
 		
 		while (p->url != NULL) {
+			int s;
+			struct hfeasy_state* state = config_get_state();
 			strncpy(buf, url, 50);
 			buf[49] = '\0';
 			a = strchr(buf, '?');
 			if (a != NULL)
 				*a = '\0';
 			if (strcmp(p->url, buf) == 0) {
-				strcpy(r, http_header);
-				r += strlen(http_header);
+				if (p->type != NULL)
+					s = sprintf(r, http_header, p->type, state->cfg.httpd_settings & HTTPD_CORS ? HTTPD_CORS_HEADER : "");
+				else
+					s = sprintf(r, http_header, "html", state->cfg.httpd_settings & HTTPD_CORS ? HTTPD_CORS_HEADER : "");
+				r += s;
 				p->callback(url, r);
 				write(fd, buffer, strlen(buffer));
 				u_printf("'%s' size=%d\r\n", url, strlen(buffer));
@@ -350,7 +358,7 @@ void USER_FUNC httpd_init(void)
 #endif
 	
 	/* register url handler callback */
-	if (hfhttpd_url_callback_register(httpd_callback, state->cfg.http_auth) != HF_SUCCESS)
+	if (hfhttpd_url_callback_register(httpd_callback, state->cfg.httpd_settings & HTTPD_AUTH) != HF_SUCCESS)
 		u_printf("error registering url callback\r\n");
 	
 	httpd_add_page("/styles.css", styles_cbk, "css");

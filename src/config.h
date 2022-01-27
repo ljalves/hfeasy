@@ -45,7 +45,7 @@ struct hfeasy_config {
 	
 	/* module */
 	char      friendly_name[50];
-	char      http_auth;
+	char      httpd_settings;
 	uint8_t   wifi_led;
 
 	/* gpio */
@@ -87,6 +87,8 @@ struct hfeasy_state {
 	char module_name[30];
 };
 
+#define HTTPD_AUTH  0x01
+#define HTTPD_CORS  0x02
 
 #define FUNC_DIMMER    0x0001
 #define FUNC_RELAY     0x0002

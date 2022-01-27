@@ -172,7 +172,8 @@ static const char *config_page =
 	"<th colspan=\"2\">Module"\
 	"<tr><td>Friendly name<td><input type=\"text\" name=\"fn\" value=\"%s\">"\
 	"<tr><td>Module name (id)<td><input type=\"text\" name=\"mn\" value=\"%s\">"\
-	"<tr><td>HTTP auth?<td><input type=\"checkbox\" name=\"auth\" value=\"1\" %s>"\
+	"<tr><td>HTTP auth<td><input type=\"checkbox\" name=\"auth\" value=\"1\" %s>"\
+	"<tr><td>Enable CORS:*<td><input type=\"checkbox\" name=\"cors\" value=\"1\" %s>"\
 	"<tr><td>Wifi LED (if supported)<td><select name=\"led\">"\
 	"<option value=\"0\"%s>Off</option>"\
 	"<option value=\"1\"%s>MQTT</option>"\
@@ -197,10 +198,13 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 		if (tmp[0] != '\0')
 			strcpy(state.cfg.friendly_name, tmp);
 		
-		state.cfg.http_auth = 0;
+		state.cfg.httpd_settings = 0;
 		ret = httpd_arg_find(url, "auth", tmp);
 		if ((ret > 0) && (tmp[0] == '1'))
-			state.cfg.http_auth = 1;	
+			state.cfg.httpd_settings |= HTTPD_AUTH;	
+		ret = httpd_arg_find(url, "cors", tmp);
+		if ((ret > 0) && (tmp[0] == '1'))
+			state.cfg.httpd_settings |= HTTPD_CORS;	
 	}
 
 	ret = httpd_arg_find(url, "mn", tmp);
@@ -223,7 +227,8 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 	
 	sprintf(rsp, config_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
 		state.cfg.friendly_name, state.module_name,
-		state.cfg.http_auth == 1 ? "checked" : "",
+		state.cfg.httpd_settings & HTTPD_AUTH ? "checked" : "",
+		state.cfg.httpd_settings & HTTPD_CORS ? "checked" : "",
 		state.cfg.wifi_led == 0 ? "selected" : "",
 		state.cfg.wifi_led == 1 ? "selected" : "",
 		state.cfg.wifi_led == 2 ? "selected" : "",
