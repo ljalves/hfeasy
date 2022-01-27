@@ -44,6 +44,9 @@ static void USER_FUNC convert_ascii(char *str)
 			c = strtol(s, NULL, 16);
 			*(out++) = c;
 			in += 3;
+		} else if (*in == '+') {
+			*(out++) = ' ';
+			in++;
 		} else {
 			*(out++) = *(in++);
 		}
