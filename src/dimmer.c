@@ -24,7 +24,6 @@ SOFTWARE.
 
 #include "hfeasy.h"
 
-#define MAX_LIGHT_LEVEL 0x80
 #define I2C_ADDR	0x1e
 
 static int is_first_sw = 1;
@@ -34,18 +33,18 @@ void USER_FUNC dimmer_publish_state(void)
 {
 	struct hfeasy_state *state = config_get_state();
 	char buf[10];
-	uint8_t lvl;
+	char *val;
 	
-	lvl = state->dimmer_level;
+	val = state->relay_state ? state->cfg.mqtt_on_value : state->cfg.mqtt_off_value;
+	mqttcli_publish(val, "POWER");
 	
-	sprintf(buf, "%d", lvl);
+	sprintf(buf, "%d", state->dimmer_level);
 	mqttcli_publish(buf, "dimmer");
 }
 
 void USER_FUNC dimmer_set(uint8_t lvl, uint8_t source)
 {
 	struct hfeasy_state *state = config_get_state();
-	char buf[10];
 
 	/* lvl=0xff - restore previous level */
 	if (lvl == DIMMER_ON) {
@@ -68,25 +67,22 @@ void USER_FUNC dimmer_set(uint8_t lvl, uint8_t source)
 			led_ctrl("f");
 
 		gpio_i2c_send(I2C_ADDR, 0);
-		sprintf(buf, "%d", 0);
-		mqttcli_publish(buf, "dimmer");
 	} else {
 		if (state->cfg.wifi_led == LED_CONFIG_RELAY)
 			led_ctrl("n");
 
 		/* top limit */
-		if (lvl > 0x80)
-			lvl = 0x80;
+		if (lvl > DIMMER_MAX_LEVEL)
+			lvl = DIMMER_MAX_LEVEL;
 
 		/* send dimmer level */
 		gpio_i2c_send(I2C_ADDR, lvl);
 
 		if (lvl > 0)
 			state->dimmer_level = lvl;
-		sprintf(buf, "%d", lvl);
-		mqttcli_publish(buf, "dimmer");
 	}
 
+	dimmer_publish_state();
 	//hfsys_nvm_write(0, (char *) &state->relay_state, sizeof(state->relay_state));
 	//hfsys_nvm_write(sizeof(state->relay_state), (char *) &state->dimmer_level, sizeof(state->dimmer_level));
 }
@@ -98,7 +94,7 @@ static void USER_FUNC switch_up_timer_cbk(hftimer_handle_t htimer)
 	if (hfgpio_fpin_is_high(GPIO_SWITCH_UP))
 		return;
 	
-	if (state->dimmer_level < MAX_LIGHT_LEVEL)
+	if (state->dimmer_level < DIMMER_MAX_LEVEL)
 		dimmer_set(state->dimmer_level + 6, RELAY_SRC_SWITCH_UP);
 
 	if (is_first_sw)
@@ -110,7 +106,6 @@ static void USER_FUNC switch_up_timer_cbk(hftimer_handle_t htimer)
 
 static void USER_FUNC switch_up_irqhandler(uint32_t arg1, uint32_t arg2)
 {
-	struct hfeasy_state *state = config_get_state();
 	static hftimer_handle_t dimmer_kup_timer = NULL;
 
 	if(dimmer_kup_timer == NULL)
@@ -181,9 +176,8 @@ void USER_FUNC dimmer_init(void)
 		state->func_state |= FUNC_BTN_DN;
 	}	
 
-	char b[20];
-
 	/*if (state->cfg.pwron_state == 0xff) {
+		char b[20];
 		hfsys_nvm_read(0, (char *) &state->relay_state, sizeof(state->relay_state));
 		sprintf(b, "st=0x%x", state->relay_state);
 		log_write(b);
@@ -195,7 +189,7 @@ void USER_FUNC dimmer_init(void)
 		else
 			dimmer_set(DIMMER_OFF, RELAY_SRC_POWERON);
 	} else {*/
-		state->dimmer_level = 0x80;
+		state->dimmer_level = DIMMER_MAX_LEVEL;
 		dimmer_set(state->cfg.pwron_state, RELAY_SRC_POWERON);
 	//}
 	state->func_state |= FUNC_DIMMER;
