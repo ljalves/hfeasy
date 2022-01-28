@@ -24,7 +24,7 @@ After flashing hfeasy, open web page:
     * Module: Toggle the switch 6 or more times within 3 sec
     * Plug: Press and hold the switch for more than 3 sec
 
-# Supported devices (so far...)
+# Known supported devices
 * Wifi Plug ([Ankuoo REC](http://www.lumitek.cn/en/productsd.php?pid=1095), [Ankuoo NEO](https://www.ankuoo.com/products/?sort=1))
 
 ![Wifi Plug](http://www.lumitekgroup.com/upload/2015062911265369.jpg)
@@ -39,10 +39,15 @@ After flashing hfeasy, open web page:
 
 * G-Homa (https://github.com/ljalves/hfeasy/issues/26)
 
-* Any LPB100/LPT100F device should be supported using the custom config option
+* Any LPB100/LPT100F/LPB130 device should be supported using the custom config option
+
+
+# Devices supported with manual config:
+
+* Orvibo S20 WiWo-S20-E2 (https://github.com/ljalves/hfeasy/issues/21)
 
 # Firmware
-* [Releases](https://github.com/ljalves/hfeasy/releases/tag/0v10)
+* [Releases](https://github.com/ljalves/hfeasy/releases/)
 
 * [Old download place](https://drive.google.com/open?id=1HWl-QiYM2u8lW9TAv1M6Kr9DPkj1_wRG)
 * hfeasy 0v7
