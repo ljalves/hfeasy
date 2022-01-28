@@ -31,9 +31,6 @@ SOFTWARE.
 struct hfeasy_state state;
 static hftimer_handle_t reset_timer;
 
-char log_buf[1000];
-
-
 #if defined(__LPXX00__)
 
 /* wifi_led, relay, but_push, but_togg, but_up, but_dn, buzz, i2c_ck, i2c_dt, inverted_outputs */
@@ -150,7 +147,7 @@ static const char *main_page =
 	"<script type=\"text/javascript\">"\
 	"const bon = document.getElementById('btn_on');"\
 	"const boff = document.getElementById('btn_off');"\
-	"bon.addEventListener('click', async _ => { try { const response = await fetch('/state?sw=1', {method: 'get'}); } catch(err) { console.error(`Error: ${err}`); }});"\
+	"bon.addEventListener('click', async _ => { try { const response = await fetch('/state?sw=255', {method: 'get'}); } catch(err) { console.error(`Error: ${err}`); }});"\
 	"boff.addEventListener('click', async _ => { try { const response = await fetch('/state?sw=0', {method: 'get'}); } catch(err) { console.error(`Error: ${err}`); }});"\
 	"</script>"\
 	"</body></html>";
@@ -639,47 +636,66 @@ static const char *log_page =
 	"%s"\
   "</body></html>";
 
-void log_write(char *s)
+
+#define LOG_BUF_SIZE 2048
+static char *log_buf = NULL;
+
+void USER_FUNC log_printf(const char *fmt, ...)
 {
-	static char *p = log_buf;
+	static char *p;
+
 	int i;
 	char *f;
 	static unsigned int line = 0;
-	char buf[500];
+	char *buf;
+	char lnr[10];
+	const char *nl = "<br>";
 	
-	sprintf(buf, "%d: %s<br>", line++, s);
+  int ret;
+	va_list ap;
 
-	while ((p - log_buf) > (sizeof(log_buf) - (strlen(buf)+1))) {
-		f = strstr(log_buf, "<br>");
-		f += 4;
+	if (log_buf == NULL) {
+		log_buf = hfmem_malloc(LOG_BUF_SIZE);
+		if (log_buf == NULL)
+			return;
 		p = log_buf;
-		for (i = strlen(f)+1; i > 0; i--)
-			*(p++) = *(f++);
-		p--;
 	}
+	
+	buf = hfmem_malloc(500);
+	if (buf == NULL)
+		return;
 
+	
+	va_start(ap, fmt);
+	ret = vsnprintf(buf, 500-1, fmt, ap);
+	va_end(ap);
+	snprintf(lnr, 10-1, "%d: ", line++);
+	if (ret > 0) {
+
+		
+		//snprintf(buf, 500, "%d: %s<br>", line++, s);
+		while ((p - log_buf) > (LOG_BUF_SIZE - (strlen(buf)+strlen(nl) + strlen(lnr) + 1))) {
+			f = strstr(log_buf, nl);
+			f += 4;
+			p = log_buf;
+			for (i = strlen(f)+1; i > 0; i--)
+				*(p++) = *(f++);
+			p--;
+		}
+
+	}
+	strcpy(p, lnr);
+	p+=strlen(lnr);
 	strcpy(p, buf);
 	p+=strlen(buf);
+	strcpy(p, nl);
+	p+=strlen(nl);
+	hfmem_free(buf);
 }
 
-int log_printf(const char *fmt, ...)
-{
-    char buf[500];
-    int ret;
-    va_list ap;
-
-    va_start(ap, fmt);
-    ret = vsprintf(buf, fmt, ap);
-    va_end(ap);
-    if (ret > 0) {
-        log_write(buf);
-    }
-    return ret;
-}
 
 static void USER_FUNC httpd_page_log(char *url, char *rsp)
 {
-	//char log[100];
 	sprintf(rsp, log_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
 					HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
 					log_buf);
@@ -844,7 +860,7 @@ static void USER_FUNC config_load(uint8_t reset)
 	if (!reset)
 		hffile_userbin_read(CONFIG_OFFSET, (char*) &state.cfg, CONFIG_SIZE);
 	
-	log_printf("loading config from flash. size=%d magic=%02x reset=%d\r\n", CONFIG_SIZE, state.cfg.ver, reset);
+	u_printf("loading config from flash. size=%d magic=%02x reset=%d\r\n", CONFIG_SIZE, state.cfg.ver, reset);
 	if (state.cfg.ver != CONFIG_MAGIC_VER1) {
 		/* set APSTA mode */
 		char rsp[64] = {0};
@@ -873,10 +889,10 @@ void USER_FUNC config_init(void)
 	state.reset_reason = hfsys_get_reset_reason();
 	
 	if (hfsys_register_system_event(sys_event_callback) != HF_SUCCESS)
-		log_write("error registering system event callback");
-	log_write("sys cbk registered");
+		log_printf("error registering system event callback");
+	log_printf("sys cbk registered");
 
-	reset_timer = hftimer_create("reboot", 1000, false, HFTIMER_ID_RESET, reboot_timer_handler, 0);
+	reset_timer = hftimer_create("reboot", 2000, false, HFTIMER_ID_RESET, reboot_timer_handler, 0);
 	
 	/* register webpages */
 	httpd_add_page("/", httpd_page_main, NULL);

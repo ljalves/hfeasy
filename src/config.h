@@ -122,8 +122,7 @@ void USER_FUNC reboot(void);
 
 struct hfeasy_state* USER_FUNC config_get_state(void);
 
-void log_write(char *s);
-int log_printf(const char *fmt, ...);
+void USER_FUNC log_printf(const char *fmt, ...);
 
 
 #endif
