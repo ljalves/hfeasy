@@ -41,15 +41,14 @@ static void USER_FUNC convert_ascii(char *str)
 	out = str;
 	
 	while (*in != '\0') {
-		if (*in > 127) {
-			*(out++) = '?';
-			in++;
-		} else if (*in == '+') {
+		if (*in == '+') {
 			*(out++) = ' ';
 			in++;
 		} else if (*in == '%') {
 			memcpy(s, in + 1, 2);
 			c = strtol(s, NULL, 16);
+			if (c > 127) {
+				c = '?';
 			*(out++) = c;
 			in += 3;
 		} else {
