@@ -26,7 +26,6 @@ static inline void USER_FUNC set_relay_pin(uint8_t st)
 void USER_FUNC relay_set(uint8_t action, uint8_t source)
 {
 	struct hfeasy_state *state = config_get_state();
-	char *val;
 
 	if (!(state->func_state & FUNC_RELAY))
 		return;
