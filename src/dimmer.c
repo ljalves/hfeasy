@@ -29,29 +29,31 @@ SOFTWARE.
 static int is_first_sw = 1;
 
 
-void USER_FUNC dimmer_publish_state(void)
+void USER_FUNC dimmer_publish_state(int on_off)
 {
 	struct hfeasy_state *state = config_get_state();
 	char buf[10];
 	char *val;
 	
-	val = state->relay_state ? state->cfg.mqtt_on_value : state->cfg.mqtt_off_value;
-	mqttcli_publish(val, "POWER");
-	
-	sprintf(buf, "%d", state->dimmer_level);
-	mqttcli_publish(buf, "dimmer");
+	if (on_off) {
+		val = state->relay_state ? state->cfg.mqtt_on_value : state->cfg.mqtt_off_value;
+		mqttcli_publish(val, "POWER");
+	} else {
+		sprintf(buf, "%d", state->dimmer_level);
+		mqttcli_publish(buf, "dimmer");
+	}
 }
 
 void USER_FUNC dimmer_set(uint8_t lvl, uint8_t source)
 {
 	struct hfeasy_state *state = config_get_state();
+	int on_off = 1;
 
 	/* lvl=0xff - restore previous level */
 	if (lvl == DIMMER_ON) {
 		lvl = state->dimmer_level;
 		state->relay_state = 1;
 	}
-	
 	/* lvl=0xfe = toggle state */
 	else if (lvl == DIMMER_TOGGLE) {
 		lvl = state->dimmer_level;
@@ -60,8 +62,11 @@ void USER_FUNC dimmer_set(uint8_t lvl, uint8_t source)
 	/* lvl=0 = turn off */
 	else if (lvl == DIMMER_OFF)
 		state->relay_state = 0;
+	else {
+		state->relay_state = 1;
+		on_off = 0;
+	}
 	
-
 	if (state->relay_state == 0) {
 		if (state->cfg.wifi_led == LED_CONFIG_RELAY)
 			led_ctrl("f");
@@ -82,7 +87,7 @@ void USER_FUNC dimmer_set(uint8_t lvl, uint8_t source)
 			state->dimmer_level = lvl;
 	}
 
-	dimmer_publish_state();
+	dimmer_publish_state(on_off);
 	//hfsys_nvm_write(0, (char *) &state->relay_state, sizeof(state->relay_state));
 	//hfsys_nvm_write(sizeof(state->relay_state), (char *) &state->dimmer_level, sizeof(state->dimmer_level));
 }

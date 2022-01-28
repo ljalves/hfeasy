@@ -9,7 +9,7 @@
 
 #define DIMMER_MAX_LEVEL 0x80
 
-void USER_FUNC dimmer_publish_state(void);
+void USER_FUNC dimmer_publish_state(int on_off);
 void USER_FUNC dimmer_set(uint8_t lvl, uint8_t source);
 
 void USER_FUNC dimmer_init(void);

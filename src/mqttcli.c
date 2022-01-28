@@ -113,7 +113,7 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 	log_printf("mqtt_sub '%s': %s\n", topic_name, msg);
 	
 	/* dimmer is setup */
-	if (*gpio_pin(GPIO_I2C_SCL) != HFM_NOPIN) {
+	if (state->func_state & FUNC_DIMMER) {
 		mqttcli_get_topic(topic, "cmnd", "dimmer");
 		if (strcmp(topic_name, topic) == 0) {
 			if (state->cfg.wifi_led & LED_CONFIG_MQTT)
@@ -129,15 +129,15 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 			
 			/* set dimmer on/off */
 			if (strcmp(cfg->mqtt_on_value, msg) == 0) {
-				dimmer_set(0xff, RELAY_SRC_MQTT);
+				dimmer_set(DIMMER_ON, RELAY_SRC_MQTT);
 			} else if (strcmp(cfg->mqtt_off_value, msg) == 0) {
-				dimmer_set(0, RELAY_SRC_MQTT);
+				dimmer_set(DIMMER_OFF, RELAY_SRC_MQTT);
 			}
 		}
 	}
 
 	/* relay is setup */
-	if (*gpio_pin(GPIO_RELAY) != HFM_NOPIN) {
+	if (state->func_state & FUNC_RELAY) {
 		mqttcli_get_topic(topic, "cmnd", "POWER");
 		if (strcmp(topic_name, topic) == 0) {
 			if (state->cfg.wifi_led & LED_CONFIG_MQTT)
@@ -348,10 +348,12 @@ static void USER_FUNC mqttcli_thread(void* client)
 							mqttcli_send_autodiscovery();
 							
 							/* publish current state */
-							if (*gpio_pin(GPIO_RELAY) != HFM_NOPIN)
+							if (state->func_state & FUNC_RELAY)
 								relay_publish_state();
-							if (*gpio_pin(GPIO_I2C_SCL) != HFM_NOPIN)
-								dimmer_publish_state();
+							if (state->func_state & FUNC_DIMMER) {
+								dimmer_publish_state(0); /* dim lvl */
+								dimmer_publish_state(1); /* power */
+							}
 							log_printf("mqtt_connected");
 						}
 						hfmem_free(topic);
