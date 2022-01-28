@@ -21,8 +21,8 @@
 #include "network.h"
 
 
-#define HFEASY_VERSION_MAJOR	0
-#define HFEASY_VERSION_MINOR	12
+#define HFEASY_VERSION_MAJOR	1
+#define HFEASY_VERSION_MINOR	0
 
 
 enum {
