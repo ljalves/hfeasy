@@ -304,52 +304,50 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 	int ret;
 	int dimmer_val = 0;
 
-	if (*gpio_pin(GPIO_BUZZER) != HFM_NOPIN) {
+	if (state->func_state & FUNC_BUZZER) {
 		ret = httpd_arg_find(url, "tone", val);
 		if (ret == 1) {
 			buzzer_play(atoi(val));
 			u_printf("playing tone %d\r\n", atoi(val));
 		}
 	}
-
-	ret = httpd_arg_find(url, "sw", val);
-	if (ret != 1) {
-		strcpy(val, "none");
-		dimmer_val = -1;
-	} else {
-		dimmer_val = atoi(val);
-	}
-
 	
-	if (*gpio_pin(GPIO_I2C_SCL) != HFM_NOPIN) {
+	if (state->func_state & FUNC_DIMMER) {
+		ret = httpd_arg_find(url, "sw", val);
+		if (ret != 1) {
+			strcpy(val, "none");
+			dimmer_val = -1;
+		} else {
+			dimmer_val = atoi(val);
+		}
+
 		if (dimmer_val != -1)
 			dimmer_set((uint8_t) dimmer_val, RELAY_SRC_HTTP);
-		
+
+		if (state->cfg.wifi_led & LED_CONFIG_HTTP)
+			led_ctrl("n1f"); /* got data = 1 blink */
+
 		sprintf(rsp, "{ \"set\": \"%d\", \"relay_status\": \"%d\", \"level\": \"%d\" }", dimmer_val, state->relay_state, state->dimmer_level);
 	}
-	else if (*gpio_pin(GPIO_RELAY) != HFM_NOPIN)
-	{
+	
+	
+	if (state->func_state & FUNC_RELAY) {
+		ret = httpd_arg_find(url, "sw", val);
+		if (ret != 1)
+			strcpy(val, "none");
 
 		/* set relay */
-		if (strcmp(val, "1") == 0)
+		if (atoi(val) > 0)
 			relay_set(1, RELAY_SRC_HTTP);
-		else if (strcmp(val, "0") == 0)
+		else
 			relay_set(0, RELAY_SRC_HTTP);
 
 		if (state->cfg.wifi_led & LED_CONFIG_HTTP)
 			led_ctrl("n1f"); /* got data = 1 blink */
 		
 		sprintf(rsp, "{ \"set\": \"%s\", \"relay_status\": \"%d\" }", val, state->relay_state);
-
-	/*	sprintf(rsp, "<html><head><title>SWITCH STATE</title></head>" \
-								 "<body>SWITCH STATE WEB PAGE<br>" \
-								 "ret=%d, sw='%s' relay_state=%d" \
-								 "</body></html>", ret, val, state->relay_state);
-	*/
 		//u_printf("ret=%d, sw='%s' relay_state=%d\r\n", ret, val, state->relay_state);
-
 	}
-	
 }
 
 
@@ -526,15 +524,15 @@ void USER_FUNC hfeasy_gpio_init(void)
 		if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH_PUSH,
 					HFM_IO_TYPE_INPUT | HFPIO_IT_FALL_EDGE | HFPIO_PULLUP,
 					switch_irqhandler_push, 1) != HF_SUCCESS)
-			log_write("failed to add switch interrupt\n");
-		log_write("added switch interrupt\n");
+			log_printf("failed to add switch interrupt\n");
+		log_printf("added switch interrupt\n");
 		state->func_state |= FUNC_BTN_PUSH;
 	}
 	
 	debounce_timer = hftimer_create("debouncer", 50, false, HFTIMER_ID_DEBOUNCE, debounce_timer_handler, 0);
 	recovery_timer = hftimer_create("recovery", 3000, false, HFTIMER_ID_RECOVERY, recovery_timer_handler, 0);
 
-	if(hfthread_create((PHFTHREAD_START_ROUTINE)button_handler, "button_handler", 64, NULL, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS) {
+	if(hfthread_create((PHFTHREAD_START_ROUTINE)button_handler, "button_handler", 128, NULL, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS) {
 		u_printf("error starting button_handler thread\r\n");
 	}
 
