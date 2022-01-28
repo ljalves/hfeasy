@@ -5,11 +5,11 @@
 #define HTTPD_MAX_PAGES		20
 
 #define HTTPS_RECV_TIMEOUT 3000
-#define HTTPS_RECV_BUF_LEN 2048
+//#define HTTPS_RECV_BUF_LEN 2048
 
 #define HTTPD_CORS_HEADER "Access-Control-Allow-Origin: *\r\n"
 
-static char https_recv_buf[HTTPS_RECV_BUF_LEN];
+//static char https_recv_buf[HTTPS_RECV_BUF_LEN];
 
 #define HttpRspDataFormat      "HTTP/1.1 200 OK\r\n"\
 "Content-type: text/html\r\n"\
@@ -144,6 +144,7 @@ static int USER_FUNC httpd_callback(char *url, char *rsp)
 	return -1;
 }
 
+#if 0
 static int http_get_alldata_len(char *data)
 {
 	char *p1 = NULL, *p2 = NULL;
@@ -318,7 +319,7 @@ static void hf_http_server(void)
 	return;
 }
 
-
+#endif
 
 
 
@@ -349,7 +350,7 @@ void USER_FUNC httpd_init(void)
 	struct hfeasy_state* state = config_get_state();
 
 	if(hfnet_start_httpd(HFTHREAD_PRIORITIES_MID)!=HF_SUCCESS) {
-		log_write("start httpd fail");
+		log_printf("start httpd fail");
 	}
 	
 #if 0

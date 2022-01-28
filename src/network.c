@@ -101,8 +101,6 @@ static void USER_FUNC httpd_page_config_wifi(char *url, char *rsp)
 				else if (strcmp(words[1], "WPA2PSK") == 0)
 					auth = 2;
 				
-				log_write(words[1]);
-				log_write(words[2]);
 				if (strcmp(words[2], "NONE") == 0)
 					enc = 0;
 				else if (strcmp(words[2], "TKIP") == 0)
@@ -111,7 +109,6 @@ static void USER_FUNC httpd_page_config_wifi(char *url, char *rsp)
 					enc = 2;
 
 				strcpy(pass, words[3]);
-				log_write(pass);
 			}
 		}
 
