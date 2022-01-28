@@ -47,7 +47,7 @@ static void USER_FUNC convert_ascii(char *str)
 		} else if (*in == '%') {
 			memcpy(s, in + 1, 2);
 			c = strtol(s, NULL, 16);
-			if (c > 127) {
+			if (c > 127)
 				c = '?';
 			*(out++) = c;
 			in += 3;
