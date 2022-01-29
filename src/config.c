@@ -70,6 +70,23 @@ const int gpio_default_config[DEVICE_END - 1][11]	=
 #endif
 
 
+int at_cmd(char *cmd, char **words, int nrwords, int maxlen)
+{
+	char tmp[150];
+	int ret;
+	snprintf(tmp, 149, "%s\r\n", cmd);
+	
+	hfat_send_cmd(tmp, strlen(tmp)+1, cmd, maxlen);
+	log_printf("atcmd: %s, %s", tmp, cmd);
+	ret = hfat_get_words(cmd, words, nrwords);
+	if (ret > 0) {
+		if ((cmd[0]=='+') && (cmd[1]=='o') && (cmd[2]=='k')) {
+		} else {
+			ret = 0;
+		}
+	}
+	return ret;
+}
 
 static void USER_FUNC reboot_timer_handler(hftimer_handle_t timer)
 {
@@ -105,6 +122,33 @@ static void USER_FUNC httpd_page_save(char *url, char *rsp)
 	}
 	sprintf(rsp, config_page_save, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR, save ? "Saving config to flash" : "Restarting");
 }
+
+
+static const char *at_page =
+	"<!DOCTYPE html><html><head><title>HFeasy v%d.%d</title><link rel=\"stylesheet\" href=\"/styles.css\"></head><body onload=\"check()\">"\
+	"<h1>HFeasy</h1><hr>"\
+	"<form action=\"at\" method=\"GET\">"\
+	"<table><tr><th colspan=\"2\">Time settings"\
+	"<tr><td>AT CMD<td><input type=\"text\" name=\"cmd\" value=\"%s\">"\
+	"<tr><td>Answer<td>%s"\
+	"</table></form></body></html>";
+
+static void USER_FUNC httpd_page_at(char *url, char *rsp)
+{
+	char tmp[100], ans[200];
+	int ret;
+
+	ret = httpd_arg_find(url, "cmd", tmp);
+	if (ret == 1) {
+		strcat(tmp, "\r\n");
+		hfat_send_cmd(tmp, strlen(tmp)+1, ans, 199);	
+	}	else {
+		strcpy(tmp, "");
+		strcpy(ans, "");
+	}
+	sprintf(rsp, at_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR, tmp, ans);
+}
+
 
 #if 0
 static const char *firmware_page =
@@ -920,4 +964,5 @@ void USER_FUNC config_init(void)
 	httpd_add_page("/status", httpd_page_status, NULL);
 	httpd_add_page("/log", httpd_page_log, NULL);
 	httpd_add_page("/save", httpd_page_save, NULL);
+	httpd_add_page("/at", httpd_page_at, NULL);
 }

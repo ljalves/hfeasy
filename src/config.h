@@ -49,11 +49,11 @@ struct hfeasy_config {
 	uint8_t   wifi_led;
 
 	/* gpio */
-	int				device;
-	int				gpio_config[11];
+	int       device;
+	int       gpio_config[11];
 	
-	int32_t		recovery_time;
-	int32_t		debounce_time;
+	int32_t   recovery_time;
+	int32_t   debounce_time;
 	
 	/* timers */
 	time_t    countdown[2];
@@ -63,9 +63,6 @@ struct hfeasy_config {
 	//time_t    timer_on[CONFIG_MAX_TIMERS], timer_off[CONFIG_MAX_TIMERS];
 	
 	uint8_t   pwron_state;
-	
-	
-	uint32_t  log_ptr;
 };
 
 struct hfeasy_state {
@@ -123,6 +120,8 @@ enum {
 void USER_FUNC config_init(void);
 void USER_FUNC config_save(void);
 void USER_FUNC reboot(void);
+
+int at_cmd(char *cmd, char **words, int nrwords, int maxlen);
 
 struct hfeasy_state* USER_FUNC config_get_state(void);
 
