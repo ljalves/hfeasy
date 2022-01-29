@@ -481,20 +481,24 @@ void USER_FUNC hfeasy_gpio_init(void)
 	int module_type, i, j;
 
 	module_type = state->cfg.gpio_config[9];
-	if (module_type > NR_MODULES)
+	if (module_type > NR_MODULES) {
+		log_printf("gpio: invalid module (%d)", module_type);
 		return;
+	}
 
 	gpio = gpio_module_types[module_type];
 	if (gpio == NULL) {
-		HF_Debug(DEBUG_ERROR,"error: gpio map not available for this module\n");
+		log_printf("gpio: gpio map for this module not supported\n");
 		return;
 	}
 
 	/* init pin mapping */
 	for (i = 0; i < 9; i++) {
-		if (state->cfg.gpio_config[i] > gpio_module_nrpins[module_type])
+		if (state->cfg.gpio_config[i] > gpio_module_nrpins[module_type]) {
+			log_printf("gpio: pin %d at func_id %d out of range (1~%d)",
+								state->cfg.gpio_config[i], i, gpio_module_nrpins[module_type]);
 			state->cfg.gpio_config[i] = 0;
-		
+		}		
 		hf_gpio_fid_to_pid_map_table[HFGPIO_F_USER_DEFINE + i] = gpio[state->cfg.gpio_config[i]];
 		if (hf_gpio_fid_to_pid_map_table[HFGPIO_F_USER_DEFINE + i] == HFM_NOPIN)
 			continue;
@@ -503,20 +507,21 @@ void USER_FUNC hfeasy_gpio_init(void)
 				hf_gpio_fid_to_pid_map_table[j] = HFM_NOPIN;
 	}
 
-	/* init gpio */
+	/* check pin mapping */
 	if (hfgpio_fmap_check(module_type) != 0) {
-		HF_Debug(DEBUG_ERROR,"error: gpio map file error\n");
+		log_printf("gpio: gpio map check error");
 		return;
 	}
 	
 	if (hf_gpio_fid_to_pid_map_table[GPIO_SWITCH_TOGGLE] != HFM_NOPIN) {
 		prev_sw_state = gpio_get_state(GPIO_SWITCH_TOGGLE);
-		/* on/off button */
+		/* on/off toggle button */
 		if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH_TOGGLE,
 					HFM_IO_TYPE_INPUT | HFPIO_IT_EDGE | HFPIO_PULLUP,
 					switch_irqhandler_toggle, 1) != HF_SUCCESS)
-			log_printf("failed to add switch interrupt\n");
+			log_printf("func: switch_toggle irq fail");
 		state->func_state |= FUNC_BTN_TOG;
+		log_printf("func: switch_toggle inited");
 	}
 
 	if (hf_gpio_fid_to_pid_map_table[GPIO_SWITCH_PUSH] != HFM_NOPIN) {
@@ -524,8 +529,8 @@ void USER_FUNC hfeasy_gpio_init(void)
 		if (hfgpio_configure_fpin_interrupt(GPIO_SWITCH_PUSH,
 					HFM_IO_TYPE_INPUT | HFPIO_IT_FALL_EDGE | HFPIO_PULLUP,
 					switch_irqhandler_push, 1) != HF_SUCCESS)
-			log_printf("failed to add switch interrupt\n");
-		log_printf("added switch interrupt\n");
+			log_printf("func: switch_push irq fail");
+		log_printf("func: switch_push inited");
 		state->func_state |= FUNC_BTN_PUSH;
 	}
 	
@@ -533,7 +538,7 @@ void USER_FUNC hfeasy_gpio_init(void)
 	recovery_timer = hftimer_create("recovery", 3000, false, HFTIMER_ID_RECOVERY, recovery_timer_handler, 0);
 
 	if(hfthread_create((PHFTHREAD_START_ROUTINE)button_handler, "button_handler", 128, NULL, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS) {
-		u_printf("error starting button_handler thread\r\n");
+		log_printf("error starting button_handler thread\r\n");
 	}
 
 	
