@@ -49,7 +49,10 @@ const int gpio_default_config[DEVICE_END - 1][11]	=
 	{	10, 8, 9, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPT100F, GPIO_INV_LED},
 	
 	/* obi g-homa */
-	{ 11, 12, 18, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB100, 0 }
+	{ 11, 12, 18, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB100, 0 },
+	
+	/* Orvibo S20 WiWo-S20-E2 */
+	{ 12, 20, 45, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB100, 0},
 };
 
 #elif defined(__LPXX30__)
