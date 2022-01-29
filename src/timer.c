@@ -24,8 +24,6 @@ SOFTWARE.
 #include "hfeasy.h"
 
 
-
-
 static void USER_FUNC sec2time(time_t seconds, int *time)
 {
 		time[0] = seconds % 60;
@@ -43,76 +41,13 @@ static void USER_FUNC time2sec(time_t *seconds, int *time)
 }
 
 
-#define SET 0
-#define GET 1
-
-int at_cmd(char *cmd, char **words, int nrwords, int maxlen)
-{
-	char tmp[150];
-	int ret;
-	snprintf(tmp, 149, "%s\r\n", cmd);
-	
-	hfat_send_cmd(tmp, strlen(tmp)+1, cmd, maxlen);
-	ret = hfat_get_words(cmd, words, nrwords);
-	if (ret > 0) {
-		log_printf("atcmd: %s, %s", tmp, cmd);
-		if ((cmd[0]=='+') && (cmd[1]=='o') && (cmd[2]=='k')) {
-		} else {
-			ret = 0;
-		}
-	}
-	return ret;
-}
-
-int at_cmd_set(char *cmd, char *val)
-{
-	char tmp[100], *words[2] = {NULL};
-	
-	snprintf(tmp, 99, "%s=%s", cmd, val);
-	return at_cmd(tmp, words, 1, 99);
-}
-
-int ntp_serverip(char *ip, int get)
-{
-	char cmd[50], *words[2] = {NULL};
-	const char *ntpser = "AT+NTPSER";
-	int ret = 0;
-	
-	if (get)
-		strcpy(cmd, ntpser);
-	else
-		snprintf(cmd, 49, "%s=%s", ntpser, ip);
-	
-	if (at_cmd(cmd, words, 2, 49) > 0) {
-		if (get)
-			strcpy(ip, words[1]);
-		log_printf("ntp: %s ip %s", get ? "get" : "set", ip);
-	} else {
-		log_printf("ntp: ntpser %s error %s", get ? "get" : "set", ip);
-		ret = -1;
-	}
-#if 0
-	hfat_send_cmd(cmd, strlen(cmd)+1, ans, 50);
-	if (hfat_get_words(ans, words, 2) > 0) {
-		if ((ans[0]=='+') && (ans[1]=='o') && (ans[2]=='k')) {
-			if (get) {
-				strcpy(ip, words[1]);
-			}
-			log_printf("ntp: %s ip %s", get ? "get" : "set", ip);
-		} else {
-			log_printf("ntp: ntpser %s error %s", get ? "get" : "set", ip);
-		}
-	}
-#endif
-	return ret;
-}
-
 static const char *ntp_config_page =
 	"<!DOCTYPE html><html><head><title>HFeasy v%d.%d</title><link rel=\"stylesheet\" href=\"/styles.css\"></head><body onload=\"check()\">"\
-	"<h1>HFeasy - NTP client</h1><hr>"\
+	"<h1>NTP client</h1><hr>"\
 	"<form action=\"ntp\" method=\"GET\">"\
 	"<table><tr><th colspan=\"2\">Time settings"\
 	"<tr><td>System time<td>%s"\
+	"<tr><td>Timezone<td>UTC<input type=\"text\" maxlength=\"3\" size=\"3\" name=\"tz\" value=\"%s\">"\
 	"<tr><td>Enabled<td><input id=\"ien\" type=\"checkbox\" name=\"en\" value=\"1\" %s onclick=\"check()\">"\
 	"<tr><td>Server IP<td><input id=\"iip\" type=\"text\" name=\"ntpip\" value=\"%s\">"\
 	"<tr><td>Sync interval (0~7200 minutes)<td><input id=\"isync\" type=\"text\" name=\"ntpsync\" value=\"%d\">"\
@@ -129,28 +64,31 @@ static const char *ntp_config_page =
 	"</script>"\
 	"</body></html>";
 
-
 static void USER_FUNC httpd_page_ntp(char *url, char *rsp)
 {
+	struct hfeasy_state *state = config_get_state();
 	char tmp[100];
 	int ret;
-	char now_s[50], ntpip[50], *words[5] = {NULL};
+	char tz_s[5], now_s[50], ntpip[50], *words[5] = {NULL};
 	int ntpsync = 0, en = 0;
 	
 	time_t now = time(NULL);
-	
-	//if (now > 8*60*60)
-	//	now -= 8*60*60;
 
-#if 1
+/* LPXX00 SDK sets time in UTC+8 */
+#if defined(__LPXX00__)
+	if (now > 8*60*60)
+		now -= 8*60*60;
+#endif
+	
+#if 0
 	/* get time */
 	strcpy(tmp, "AT+NTPTM");
 	if (at_cmd(tmp, words, 4, 99) > 0) {
 		sprintf(now_s, "%s %s %s", words[1], words[2], words[3]);
-		log_printf("ntp: time %s %s %s %s", words[1], words[2], words[3], words[4]);
+		log_printf("[INFO,ntp]: time %s %s %s %s", words[1], words[2], words[3], words[4]);
 	} else {
 		strcpy(now_s, "error");
-		log_printf("ntp: error getting time");
+		log_printf("[INFO,ntp]: error getting time");
 	}
 #endif
 
@@ -170,7 +108,15 @@ static void USER_FUNC httpd_page_ntp(char *url, char *rsp)
 		ret = httpd_arg_find(url, "ntpip", tmp);
 		if (ret == 1) {
 			strcpy(ntpip, tmp);
-			ntp_serverip(ntpip, SET);
+			sprintf(tmp, "AT+NTPSER=%s", ntpip);
+			if (at_cmd(tmp, words, 2, 99)) {
+				if (strcmp(words[1], "Not") == 0)
+					log_printf("[ERROR,ntp]: hostnames not supported (%s), only ip", ntpip);
+				else
+					log_printf("[INFO,ntp]: ok set server ip=%s", ntpip);
+			} else {
+				log_printf("[ERROR,ntp]: err setting server ip (%s)", ntpip);
+			}
 		}
 		
 		/* set ntp sync interval */
@@ -179,33 +125,51 @@ static void USER_FUNC httpd_page_ntp(char *url, char *rsp)
 			ntpsync = atoi(tmp);
 			snprintf(tmp, 49, "AT+NTPRF=%d", ntpsync / 10);
 			if (at_cmd(tmp, words, 1, 99)) {
-				log_printf("ntp: sync ok %d", ntpsync);
+				log_printf("[INFO,ntp]: set sync interval to %d minutes", ntpsync);
 			} else {
-				log_printf("ntp: error setting sync=%d", ntpsync);
+				log_printf("[ERROR,ntp]: error setting sync interval (%d)", ntpsync);
 			}
+		}
+
+		ret = httpd_arg_find(url, "tz", tmp);
+		if (ret == 1) {
+			ret = atoi(tmp);
+			if ((ret < -12) || (ret > 12)) {
+				log_printf("[ERROR,ntp]: tz out of range (%d)", ret);
+				ret = 0;
+			}
+			state->cfg.tz = ret;
 		}
 
 	} else {
 		/* get ntp server ip */
-		ntp_serverip(ntpip, GET);
+		strcpy(tmp, "AT+NTPSER");
+		if (at_cmd(tmp, words, 2, 99)) {
+			strcpy(ntpip, words[1]);
+			log_printf("[INFO,ntp]: server ip=%d", ntpip);
+		}
 		
 		/* get sync interval */
 		strcpy(tmp, "AT+NTPRF");
 		if (at_cmd(tmp, words, 2, 99)) {
 			ntpsync = atoi(words[1]) * 10;
-			log_printf("ntp: sync=%d", ntpsync);
+			log_printf("[INFO,ntp]: sync=%d", ntpsync);
 		}
 
 		/* get enabled/disabled */
 		strcpy(tmp, "AT+NTPEN");
 		if (at_cmd(tmp, words, 2, 99)) {
 			en = strcmp(words[1], "on") == 0 ? 1 : 0;
-			log_printf("ntp: enabled=%d", en);
+			log_printf("[INFO,ntp]: enabled=%d", en);
 		}
 	}
+	sprintf(tz_s, "%s%d", state->cfg.tz < 0 ? "" : "+", state->cfg.tz);
+
+	/* apply tz offset */
+	now += state->cfg.tz*60*60;
 	
 	snprintf(rsp, 1000, ntp_config_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
-	ctime(&now), en ? "checked" : "", ntpip, ntpsync);
+	ctime(&now), tz_s, en ? "checked" : "", ntpip, ntpsync);
 }	
 
 

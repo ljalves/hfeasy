@@ -56,6 +56,7 @@ struct hfeasy_config {
 	int32_t   debounce_time;
 	
 	/* timers */
+	int       tz;
 	time_t    countdown[2];
 	
 	struct hfeasy_timer timers[CONFIG_MAX_TIMERS];
