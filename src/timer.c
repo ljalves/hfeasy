@@ -24,17 +24,210 @@ SOFTWARE.
 #include "hfeasy.h"
 
 
+
+
+static void USER_FUNC sec2time(time_t seconds, int *time)
+{
+		time[0] = seconds % 60;
+		seconds /= 60;
+		time[1] = seconds % 60;
+		seconds /= 60;
+		time[2] = seconds;
+}
+
+static void USER_FUNC time2sec(time_t *seconds, int *time)
+{
+	*seconds = time[0];
+	*seconds += time[1] * 60;
+	*seconds += time[2] * 60 * 60;
+}
+
+
+#define SET 0
+#define GET 1
+
+int at_cmd(char *cmd, char **words, int nrwords, int maxlen)
+{
+	char tmp[150];
+	int ret;
+	snprintf(tmp, 149, "%s\r\n", cmd);
+	
+	hfat_send_cmd(tmp, strlen(tmp)+1, cmd, maxlen);
+	ret = hfat_get_words(cmd, words, nrwords);
+	if (ret > 0) {
+		if ((cmd[0]=='+') && (cmd[1]=='o') && (cmd[2]=='k')) {
+			
+		} else {
+			ret = 0;
+		}
+	}
+	return ret;
+}
+
+int at_cmd_set(char *cmd, char *val)
+{
+	char tmp[100], *words[2] = {NULL};
+	
+	snprintf(tmp, 99, "%s=%s", cmd, val);
+	return at_cmd(tmp, words, 1, 99);
+}
+
+int ntp_serverip(char *ip, int get)
+{
+	char ans[150], cmd[50], *words[2] = {NULL};
+	const char *ntpser = "AT+NTPSER";
+	int ret = 0;
+	
+	if (get)
+		strcpy(cmd, ntpser);
+	else
+		snprintf(cmd, 49, "%s=%s", ntpser, ip);
+	
+	if (at_cmd(cmd, words, 2, 49) > 0) {
+		if (get)
+			strcpy(ip, words[1]);
+		log_printf("ntp: %s ip %s", get ? "get" : "set", ip);
+	} else {
+		log_printf("ntp: ntpser %s error %s", get ? "get" : "set", ip);
+		ret = -1;
+	}
+#if 0
+	hfat_send_cmd(cmd, strlen(cmd)+1, ans, 50);
+	if (hfat_get_words(ans, words, 2) > 0) {
+		if ((ans[0]=='+') && (ans[1]=='o') && (ans[2]=='k')) {
+			if (get) {
+				strcpy(ip, words[1]);
+			}
+			log_printf("ntp: %s ip %s", get ? "get" : "set", ip);
+		} else {
+			log_printf("ntp: ntpser %s error %s", get ? "get" : "set", ip);
+		}
+	}
+#endif
+	return ret;
+}
+
+static const char *ntp_config_page =
+	"<!DOCTYPE html><html><head><title>HFeasy v%d.%d</title><link rel=\"stylesheet\" href=\"/styles.css\"></head><body onload=\"check()\">"\
+	"<h1>HFeasy - NTP client</h1><hr>"\
+	"<form action=\"ntp\" method=\"GET\">"\
+	"<table><tr><th colspan=\"2\">Time settings"\
+	"<tr><td>System time<td>%s"\
+	"<tr><td>Enabled<td><input id=\"ien\" type=\"checkbox\" name=\"en\" value=\"1\" %s onclick=\"check()\">"\
+	"<tr><td>Server IP<td><input id=\"iip\" type=\"text\" name=\"ntpip\" value=\"%s\">"\
+	"<tr><td>Sync interval (0~7200 minutes)<td><input id=\"isync\" type=\"text\" name=\"ntpsync\" value=\"%d\">"\
+	"<tr><td><input type=\"submit\" value=\"Apply\" name=\"apply\"></table></form>"\
+	"<script type=\"text/javascript\">"\
+	"function check() {"\
+  "if(document.getElementById(\"ien\").checked == true){"\
+	"document.getElementById(\"iip\").disabled = false;"\
+	"document.getElementById(\"isync\").disabled = false;"\
+	"}else{"\
+	"document.getElementById(\"iip\").disabled = true;"\
+	"document.getElementById(\"isync\").disabled = true;"\
+	"}}"\
+	"</script>"\
+	"</body></html>";
+
+
+static void USER_FUNC httpd_page_ntp(char *url, char *rsp)
+{
+	char tmp[100];
+	int ret;
+	char now_s[50], ntpip[16], ans[150], *words[5] = {NULL};
+	int ntpsync, en = 0;
+	
+	time_t now = time(NULL) - 8*60*60;
+
+#if 0	
+	/* get time */
+	strcpy(tmp, "AT+NTPTM");
+	if (at_cmd(tmp, words, 4, 99) > 0) {
+		sprintf(now_s, "%s %s %s", words[1], words[2], words[3]);
+		log_printf("ntp: time %s %s %s %s", words[1], words[2], words[3], words[4]);
+	} else {
+		strcpy(now_s, "error");
+		log_printf("ntp: error getting time");
+	}
+#endif
+
+	ret = httpd_arg_find(url, "apply", tmp);
+	if (ret) {
+		/* set ntp enabled/disabled */
+		ret = httpd_arg_find(url, "en", tmp);
+		if (ret) {
+			strcpy(tmp, "AT+NTPEN=on");
+			en = 1;
+		} else {
+			strcpy(tmp, "AT+NTPEN=off");
+		}
+		at_cmd(tmp, words, 1, 99);
+
+		/* set ntp server ip */
+		ret = httpd_arg_find(url, "ntpip", tmp);
+		if (ret == 1) {
+			strcpy(ntpip, tmp);
+			ntp_serverip(ntpip, SET);
+		}
+		
+		/* set ntp sync interval */
+		ret = httpd_arg_find(url, "ntpsync", tmp);
+		if (ret == 1) {
+			ntpsync = atoi(tmp);
+			snprintf(tmp, 49, "AT+NTPRF=%d\r\n", ntpsync / 10);
+			hfat_send_cmd(tmp, sizeof(tmp), ans, 150);
+			if (hfat_get_words(ans, words, 4) > 0) {
+				if ((ans[0]=='+') && (ans[1]=='o') && (ans[2]=='k')) {
+					log_printf("ntp: sync ok %d", ntpsync);
+				} else {
+					log_printf("ntp: error setting sync %d", ntpsync);
+					strcpy(ntpip, "0.0.0.0");
+				}
+			}
+		}
+
+
+	} else {
+		/* get ntp server ip */
+		ntp_serverip(ntpip, GET);
+		
+		/* get sync interval */
+		hfat_send_cmd("AT+NTPRF\r\n", sizeof("AT+NTPRF\r\n"), ans, 150);
+		if (hfat_get_words(ans, words, 4) > 0) {
+			if ((ans[0]=='+') && (ans[1]=='o') && (ans[2]=='k')) {
+				ntpsync = atoi(words[1]) * 10;
+				log_printf("ntp: sync %d", ntpsync);
+			}
+		}
+
+		/* get enabled/disabled */
+		snprintf(tmp, 49, "AT+NTPEN\r\n");
+		hfat_send_cmd(tmp, sizeof(tmp), ans, 150);
+		if (hfat_get_words(ans, words, 2) > 0) {
+			if ((ans[0]=='+') && (ans[1]=='o') && (ans[2]=='k')) {
+				if (strcmp(words[1], "on") == 0)
+					en = 1;
+				log_printf("ntp: enabled %d", en);
+			}
+		}
+	}
+	
+	snprintf(rsp, 1000, ntp_config_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
+	ctime(&now), en ? "checked" : "", now_s, ntpip, ntpsync);
+}	
+
+
 static const char *timer_page =
-	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title></head><body>"\
-	"<h1>HFeasy timers</h1><hr>"\
-	"<h2>Countdown</h2><br>"\
-	"<form action=\"/timer\" method=\"GET\">"\
-	"Turn OFF (0 to disable): <input type=\"text\" name=\"cd0_h\" value=\"%d\" maxlength=\"4\" size=\"4\">h"\
-		"<input type=\"text\" name=\"cd0_m\" value=\"%d\" maxlength=\"2\" size=\"2\">m"\
-		"<input type=\"text\" name=\"cd0_s\" value=\"%d\" maxlength=\"2\" size=\"2\">s<br>"\
-	"Turn ON (0 to disable): <input type=\"text\" name=\"cd1_h\" value=\"%d\" maxlength=\"4\" size=\"4\">h"\
-		"<input type=\"text\" name=\"cd1_m\" value=\"%d\" maxlength=\"2\" size=\"2\">m"\
-		"<input type=\"text\" name=\"cd1_s\" value=\"%d\" maxlength=\"2\" size=\"2\">s<br>"\
+	"<!DOCTYPE html><html><head><title>HFeasy v%d.%d</title><link rel=\"stylesheet\" href=\"/styles.css\"></head><body>"\
+	"<h1>HFeasy timer</h1><hr>"\
+	"<br><h2>Countdown timer</h2><br>"\
+	"<form action=\"timer\" method=\"GET\">"\
+	"Turn OFF (0 to disable): <input type=\"text\" name=\"cd02\" value=\"%d\" maxlength=\"4\" size=\"4\">h"\
+		"<input type=\"text\" name=\"cd01\" value=\"%d\" maxlength=\"2\" size=\"2\">m"\
+		"<input type=\"text\" name=\"cd00\" value=\"%d\" maxlength=\"2\" size=\"2\">s<br>"\
+	"Turn ON (0 to disable): <input type=\"text\" name=\"cd12\" value=\"%d\" maxlength=\"4\" size=\"4\">h"\
+		"<input type=\"text\" name=\"cd11\" value=\"%d\" maxlength=\"2\" size=\"2\">m"\
+		"<input type=\"text\" name=\"cd10\" value=\"%d\" maxlength=\"2\" size=\"2\">s<br>"\
 	"<input type=\"submit\" value=\"Apply\"></form>"\
 	"<hr>"\
 	"<h2>Timer (not functional - under implementation)</h2><br>"\
@@ -45,104 +238,50 @@ static const char *timer_page =
 	"<input type=\"text\" name=\"t_m\" value=\"%d\" maxlength=\"2\" size=\"2\">m"\
 	" repeat <select name=\"t_r\"><option value=\"no\">No</option><option value=\"day\">Daily</option><option value=\"week\">Weekly</option></select>"\
 	"<input type=\"submit\" value=\"Add\"></form>"\
-	"<hr>"\
-	"<form action=\"/timer\" method=\"GET\"><input type=\"submit\" value=\"Save to flash\" name=\"save\"></form>"\
 	"</body></html>";
 
 static void USER_FUNC httpd_page_timer(char *url, char *rsp)
 {
 	struct hfeasy_state *state = config_get_state();
 	struct hfeasy_config *cfg = &state->cfg;
-	char tmp[50];
+	char tmp[50], var[10];
 	int ret;
-	time_t countdown;
-	int cd0_h, cd0_m, cd0_s;
-	int cd1_h, cd1_m, cd1_s;
+
+	/* i:timer, j:0=s,1=m,2=h */
+	int i, j, cd[2][3];
+	
+	time_t now = time(NULL);
 	
 	
-	ret = httpd_arg_find(url, "cd0_h", tmp);
-	if (ret > 0)
-		cd0_h = atoi(tmp);
-	else
-		cd0_h = -1;
+	for (i = 0; i < 2; i++) {
+		for (j = 0; j < 3; j++) {
+			cd[i][j] = -1;
+			snprintf(var, 9, "cd%d%d", i, j);
+			ret = httpd_arg_find(url, var, tmp);
+			if (ret == 1){
+				cd[i][j] = atoi(tmp);
+				log_printf("timer: got %s=%s/%d ret=%d", var, tmp, cd[i][j], ret);
+			}
+		}
+	}
 
-	ret = httpd_arg_find(url, "cd0_m", tmp);
-	if (ret > 0)
-		cd0_m = atoi(tmp);
-	else
-		cd0_m = -1;
-
-	ret = httpd_arg_find(url, "cd0_s", tmp);
-	if (ret > 0)
-		cd0_s = atoi(tmp);
-	else
-		cd0_s = -1;
-
-	ret = httpd_arg_find(url, "cd1_h", tmp);
-	if (ret > 0)
-		cd1_h = atoi(tmp);
-	else
-		cd1_h = -1;
-
-	ret = httpd_arg_find(url, "cd1_m", tmp);
-	if (ret > 0)
-		cd1_m = atoi(tmp);
-	else
-		cd1_m = -1;
-
-	ret = httpd_arg_find(url, "cd1_s", tmp);
-	if (ret > 0)
-		cd1_s = atoi(tmp);
-	else
-		cd1_s = -1;
-
-
-	if (cd0_h >= 0 && cd0_m >= 0 && cd0_s >= 0) {
-		countdown = cd0_s;
-		countdown += cd0_m * 60;
-		countdown += cd0_h * 60 * 60;
+	for (i = 0; i < 2; i++) {
+		if (cd[i][0] >= 0 && cd[i][1] >= 0 && cd[i][2] >= 0) {
 		/* new value */
-		cfg->countdown[0] = countdown;
-	} else if (cfg->countdown[0] > 0) {
-		countdown = cfg->countdown[0];
-		cd0_s = countdown % 60;
-		countdown /= 60;
-		cd0_m = countdown % 60;
-		countdown /= 60;
-		cd0_h = countdown;
-	} else {
-		cd0_h = 0;
-		cd0_m = 0;
-		cd0_s = 0;
+		time2sec(&cfg->countdown[i], cd[i]);
+		} else if (cfg->countdown[i] > 0) {
+			/* get current value */
+			sec2time(cfg->countdown[i], cd[i]);
+		} else {
+			/* invalid time */
+			for (j = 0; j < 3; j++)
+				cd[i][j] = 0;
+		}
 	}
-
-	if (cd1_h >= 0 && cd1_m >= 0 && cd1_s >= 0) {
-		countdown = cd1_s;
-		countdown += cd1_m * 60;
-		countdown += cd1_h * 60 * 60;
-		/* new value */
-		cfg->countdown[1] = countdown;
-	} else if (cfg->countdown[1] > 0) {
-		countdown = cfg->countdown[1];
-		cd1_s = countdown % 60;
-		countdown /= 60;
-		cd1_m = countdown % 60;
-		countdown /= 60;
-		cd1_h = countdown;
-	} else {
-		cd1_h = 0;
-		cd1_m = 0;
-		cd1_s = 0;
-	}
-
-	ret = httpd_arg_find(url, "save", tmp);
-	if (ret > 0) {
-		config_save();
-		reboot();
-	}
+	log_printf("timer: cdoff=%d cdon=%d", cfg->countdown[0], cfg->countdown[1]);
 	
-	sprintf(rsp, timer_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
-			cd0_h, cd0_m, cd0_s, cd1_h, cd1_m, cd1_s, "");
+	snprintf(rsp, 1200, timer_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
+			cd[0][2], cd[0][1], cd[0][0], cd[1][2], cd[1][1], cd[1][0], ctime(&now), 0, 0);
 }	
 
 
@@ -185,29 +324,6 @@ static void USER_FUNC timer_thread(void *opaque)
 				}
 			}
 		}
-		#if 0
-		if (state->cfg.countdown[1] > 0) {
-			now = hfsys_get_time() / 1000;
-			if (state->countdown[1] > 0) {
-				/* turn ON timer running */
-				if (state->relay_state == 1) {
-					//u_printf("ABORT ON COUNTDOWN\r\n");
-					state->countdown[1] = 0;
-				} else if (now > state->countdown[1]) {
-					//u_printf("DONE ON\n\r");
-					state->countdown[1] = 0;
-					gpio_set_relay(RELAY_ON, 1, RELAY_SRC_TIMER);
-				}
-			} else {
-				/* wait to start */
-				if (state->relay_state == 0) {
-					/* start turn ON timer */
-					state->countdown[1] = now + state->cfg.countdown[1];
-					//u_printf("turn ON after %lu sec, time = %lu\r\n", state->cfg.countdown[1], state->countdown[1]);
-				}
-			}
-		}
-		#endif
 	}
 }
 
@@ -222,7 +338,7 @@ void USER_FUNC timer_init(void)
 					"timer", 256, state, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS) {
 		u_printf("timer thread create failed!\n");
 	}
-
 	
 	httpd_add_page("/timer", httpd_page_timer, NULL);
+	httpd_add_page("/ntp", httpd_page_ntp, NULL);
 }
