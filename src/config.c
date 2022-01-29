@@ -640,21 +640,19 @@ static const char *log_page =
   "</body></html>";
 
 
-#define LOG_BUF_SIZE 2048
+#define LOG_BUF_SIZE 1024
 static char *log_buf = NULL;
 
 void USER_FUNC log_printf(const char *fmt, ...)
 {
 	static char *p;
-
 	int i;
 	char *f;
 	static unsigned int line = 0;
 	char *buf;
 	char lnr[10];
 	const char *nl = "<br>";
-	
-  int ret;
+	int ret;
 	va_list ap;
 
 	if (log_buf == NULL) {
@@ -674,10 +672,8 @@ void USER_FUNC log_printf(const char *fmt, ...)
 	va_end(ap);
 	snprintf(lnr, 10-1, "%d: ", line++);
 	if (ret > 0) {
-
 		
-		//snprintf(buf, 500, "%d: %s<br>", line++, s);
-		while ((p - log_buf) > (LOG_BUF_SIZE - (strlen(buf)+strlen(nl) + strlen(lnr) + 1))) {
+		while ((p - log_buf) > (LOG_BUF_SIZE - (strlen(buf) + strlen(nl) + strlen(lnr) + 1))) {
 			f = strstr(log_buf, nl);
 			f += 4;
 			p = log_buf;
@@ -686,13 +682,13 @@ void USER_FUNC log_printf(const char *fmt, ...)
 			p--;
 		}
 
+		strcpy(p, lnr);
+		p+=strlen(lnr);
+		strcpy(p, buf);
+		p+=strlen(buf);
+		strcpy(p, nl);
+		p+=strlen(nl);
 	}
-	strcpy(p, lnr);
-	p+=strlen(lnr);
-	strcpy(p, buf);
-	p+=strlen(buf);
-	strcpy(p, nl);
-	p+=strlen(nl);
 	hfmem_free(buf);
 }
 
@@ -751,7 +747,7 @@ static int sys_event_callback(uint32_t event_id, void *param)
 			{
 				uint32_t *p_ip;
 				p_ip = (uint32_t*) param;
-				log_printf("dhcp ok %08X!", *p_ip);
+				log_printf("network: dhcp ok got ip %s", inet_ntoa(*p_ip));
 				state.has_ip = 1;
 				if (state.cfg.wifi_led == LED_CONFIG_WIFI)
 					led_ctrl("n");
