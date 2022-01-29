@@ -85,19 +85,25 @@ static const char *config_page_save =
 	"<!DOCTYPE html><html><head>"\
 	"<meta http-equiv=\"refresh\" content=\"5;url=/\" />"\
 	"<title>HFeasy config v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
-	"Saving config to flash. Please wait...</body></html>";
+	". Please wait...</body></html>";
 
 static void USER_FUNC httpd_page_save(char *url, char *rsp)
 {
 	char tmp[50];
 	int ret;
+	int save = 0;
 	
 	ret = httpd_arg_find(url, "save", tmp);
 	if (ret > 0) {
 		config_save();
+		save = 1;
 		reboot();
 	}
-	sprintf(rsp, config_page_save, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR);
+	ret = httpd_arg_find(url, "restart", tmp);
+	if (ret > 0) {
+		reboot();
+	}
+	sprintf(rsp, config_page_save, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR, save ? "Saving config to flash" : "Restarting");
 }
 
 #if 0
@@ -148,7 +154,8 @@ static const char *main_page =
 	"<tr><td><a href=\"iweb.html\">Upgrade</a>"\
 	"<tr><td><a href=\"hf\">HF</a>"\
 	"</table>"\
-	"<hr><form action=\"/save\" method=\"GET\"><input type=\"submit\" value=\"Save changes to flash and reboot\" name=\"save\"></form>"\
+	"<hr><form action=\"save\" method=\"GET\"><input type=\"submit\" value=\"Save changes to flash and restart\" name=\"save\"></form>"\
+	"<hr><form action=\"restart\" method=\"GET\"><input type=\"submit\" value=\"Restart\" name=\"restart\"></form>"\
 	"<script type=\"text/javascript\">"\
 	"const bon = document.getElementById('btn_on');"\
 	"const boff = document.getElementById('btn_off');"\
@@ -184,6 +191,7 @@ static const char *config_page =
 	"<option value=\"4\"%s>Relay</option>"\
 	"<option value=\"5\"%s>MQTT topic</option>"\
 	"<option value=\"6\"%s>Find</option>"\
+	"<option value=\"7\"%s>Wifi</option>"\
 	"</select>"\
 	"<tr><td>Power on state<td><input type=\"text\" name=\"pwron\" value=\"%d\"> (0=off, >0=on; dimmer: level=0~128)"\
 	"</table><input type=\"submit\" value=\"Apply\"></form>"\
