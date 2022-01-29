@@ -45,7 +45,7 @@ all:
 $(PROJECT_NAME).bin: $(PROJECT_NAME).elf
 		@echo "-----------------make target:$@ 1st-dep:$< $(makefn3)-----------------"
 		$(OBJCOPY) -O binary $(BUILD_DIR)/$< $(BUILD_DIR)/$@
-		@arm-none-eabi-objdump -h $(BUILD_DIR)/$(PROJECT_NAME).elf > $(BUILD_DIR)/dump.log
+		$(OBJDUMP) -h $(BUILD_DIR)/$(PROJECT_NAME).elf > $(BUILD_DIR)/dump.log
 		@echo
 		@echo "BUILD COMPLETE :: LPB130 serial upload binary at: $(BUILD_DIR)/$(PROJECT_NAME).bin"
 		@echo "BUILD COMPLETE :: LPB130 web upload binary at: $(BUILD_DIR)/$(PROJECT_NAME)_UPGRADE.bin"
