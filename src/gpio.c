@@ -534,8 +534,8 @@ void USER_FUNC hfeasy_gpio_init(void)
 		state->func_state |= FUNC_BTN_PUSH;
 	}
 	
-	debounce_timer = hftimer_create("debouncer", 50, false, HFTIMER_ID_DEBOUNCE, debounce_timer_handler, 0);
-	recovery_timer = hftimer_create("recovery", 3000, false, HFTIMER_ID_RECOVERY, recovery_timer_handler, 0);
+	debounce_timer = hftimer_create("debouncer", state->cfg.debounce_time, false, HFTIMER_ID_DEBOUNCE, debounce_timer_handler, 0);
+	recovery_timer = hftimer_create("recovery", state->cfg.recovery_time, false, HFTIMER_ID_RECOVERY, recovery_timer_handler, 0);
 
 	if(hfthread_create((PHFTHREAD_START_ROUTINE)button_handler, "button_handler", 128, NULL, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS) {
 		log_printf("error starting button_handler thread\r\n");

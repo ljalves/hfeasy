@@ -24,7 +24,7 @@ SOFTWARE.
 #include <stdarg.h>
 #include "hfeasy.h"
 
-#define CONFIG_MAGIC_VER1  0xd0
+#define CONFIG_MAGIC_VER1  0xcf
 #define CONFIG_OFFSET      0x00
 #define CONFIG_SIZE        (sizeof(struct hfeasy_config))
 
@@ -884,6 +884,9 @@ static void USER_FUNC config_load(uint8_t reset)
 		strcpy(state.cfg.friendly_name, "HFEASY");
 		if (state.module_name[0] == '\0')
 			strcpy(state.module_name, "HFEASY");
+		
+		state.cfg.recovery_time = 3000;
+		state.cfg.debounce_time = 50;
 		
 		hffile_userbin_zero();
 		config_save();
