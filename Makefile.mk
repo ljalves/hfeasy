@@ -1,4 +1,6 @@
-GCC_PATH=/SCRATCH/gcc/gcc-arm-none-eabi-5_4-2016q3
+
+GCC_PATH=/opt/gcc-arm-none-eabi-7-2018-q2-update
+
 CROSS_COMPILE ?= $(GCC_PATH)/bin/arm-none-eabi-
 CROSS ?= $(CROSS_COMPILE)
 
