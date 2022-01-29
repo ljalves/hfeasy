@@ -35,7 +35,7 @@ void app_init(void)
 int USER_FUNC app_main(void)
 {
 	hfdbg_set_level(0);
-	log_printf("sdk version(%s), app_main start time is %s %s",
+	log_printf("sdk version(%s) build date %s %s",
 						hfsys_get_sdk_version(), __DATE__, __TIME__);
 	
 	config_init();
