@@ -25,7 +25,7 @@ SOFTWARE.
 
 
 static hftimer_handle_t led_timer;
-static char led_actions[30];
+static char *led_actions;
 static uint8_t led_idx = 0;
 
 static inline void USER_FUNC set_led(uint8_t st)
@@ -121,6 +121,12 @@ void USER_FUNC led_init(void)
 	if (*gpio_pin(GPIO_LED_WIFI) == HFM_NOPIN)
 		return;
 
+	led_actions = hfmem_malloc(50);
+	if (led_actions == NULL) {
+		log_printf("led: no mem!");
+		return;
+	}
+	
 	hfgpio_configure_fpin(GPIO_LED_WIFI, state->cfg.gpio_config[10] & GPIO_INV_LED ? HFM_IO_OUTPUT_1 : HFM_IO_OUTPUT_0);
 	
 	led_idx = 0;
@@ -137,6 +143,7 @@ void USER_FUNC led_deinit(void)
 	if (state->func_state & FUNC_LED) {
 		hfgpio_configure_fpin(GPIO_LED_WIFI, HFM_IO_TYPE_INPUT);
 		hftimer_delete(led_timer);
+		hfmem_free(led_actions);
 		state->func_state &= ~FUNC_LED;
 	}
 }

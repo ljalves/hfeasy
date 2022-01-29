@@ -237,7 +237,7 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 	);
 
 	if (state.cfg.wifi_led == LED_CONFIG_FIND) {
-		led_ctrl("n5f5n2f2n2f2n5f5n1f1r"); /* find blink pattern */
+		led_ctrl("n5f5n2f2n2f2n5f5n1f1r"); /* "find" blink pattern */
 	} else {
 		led_ctrl("f");
 	}	
@@ -725,19 +725,22 @@ static int sys_event_callback(uint32_t event_id, void *param)
 
 	switch(event_id) {
 		case HFE_WIFI_STA_CONNECTED:
-			log_printf("wifi sta connected!\r\n");
+			log_printf("wifi sta connected");
 			led_ctrl("n51f51r");
 		
 			/* check if static ip */
 			get_sta_settings(tmp);
-			if (strcmp(tmp, "static") == 0)
+			if (strcmp(tmp, "static") == 0) {
 				state.has_ip = 1;
-		
+				if (state.cfg.wifi_led == LED_CONFIG_WIFI)
+					led_ctrl("n");
+
+			}		
 			break;
 			
 		case HFE_WIFI_STA_DISCONNECTED:
 			state.has_ip = 0;
-			log_printf("wifi sta disconnected!\r\n");
+			log_printf("wifi sta disconnected!");
 			led_ctrl("n2f2r");
 			break;
 			
@@ -747,7 +750,10 @@ static int sys_event_callback(uint32_t event_id, void *param)
 				p_ip = (uint32_t*) param;
 				log_printf("dhcp ok %08X!", *p_ip);
 				state.has_ip = 1;
-				led_ctrl("f");
+				if (state.cfg.wifi_led == LED_CONFIG_WIFI)
+					led_ctrl("n");
+				else
+					led_ctrl("f");
 			}
 			break;
 		
@@ -756,7 +762,7 @@ static int sys_event_callback(uint32_t event_id, void *param)
 			break;
 			
 		case HFE_CONFIG_RELOAD:
-			log_printf("reload!\r\n");
+			log_printf("sys: config reload");
 			break;
 			
 		default:
@@ -889,8 +895,7 @@ void USER_FUNC config_init(void)
 	state.reset_reason = hfsys_get_reset_reason();
 	
 	if (hfsys_register_system_event(sys_event_callback) != HF_SUCCESS)
-		log_printf("error registering system event callback");
-	log_printf("sys cbk registered");
+		log_printf("init: error registering system event callback");
 
 	reset_timer = hftimer_create("reboot", 2000, false, HFTIMER_ID_RESET, reboot_timer_handler, 0);
 	
