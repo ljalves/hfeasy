@@ -55,8 +55,8 @@ int at_cmd(char *cmd, char **words, int nrwords, int maxlen)
 	hfat_send_cmd(tmp, strlen(tmp)+1, cmd, maxlen);
 	ret = hfat_get_words(cmd, words, nrwords);
 	if (ret > 0) {
+		log_printf("atcmd: %s, %s", tmp, cmd);
 		if ((cmd[0]=='+') && (cmd[1]=='o') && (cmd[2]=='k')) {
-			
 		} else {
 			ret = 0;
 		}
@@ -74,7 +74,7 @@ int at_cmd_set(char *cmd, char *val)
 
 int ntp_serverip(char *ip, int get)
 {
-	char ans[150], cmd[50], *words[2] = {NULL};
+	char cmd[50], *words[2] = {NULL};
 	const char *ntpser = "AT+NTPSER";
 	int ret = 0;
 	
@@ -134,12 +134,15 @@ static void USER_FUNC httpd_page_ntp(char *url, char *rsp)
 {
 	char tmp[100];
 	int ret;
-	char now_s[50], ntpip[16], ans[150], *words[5] = {NULL};
-	int ntpsync, en = 0;
+	char now_s[50], ntpip[50], *words[5] = {NULL};
+	int ntpsync = 0, en = 0;
 	
-	time_t now = time(NULL) - 8*60*60;
+	time_t now = time(NULL);
+	
+	//if (now > 8*60*60)
+	//	now -= 8*60*60;
 
-#if 0	
+#if 1
 	/* get time */
 	strcpy(tmp, "AT+NTPTM");
 	if (at_cmd(tmp, words, 4, 99) > 0) {
@@ -174,46 +177,35 @@ static void USER_FUNC httpd_page_ntp(char *url, char *rsp)
 		ret = httpd_arg_find(url, "ntpsync", tmp);
 		if (ret == 1) {
 			ntpsync = atoi(tmp);
-			snprintf(tmp, 49, "AT+NTPRF=%d\r\n", ntpsync / 10);
-			hfat_send_cmd(tmp, sizeof(tmp), ans, 150);
-			if (hfat_get_words(ans, words, 4) > 0) {
-				if ((ans[0]=='+') && (ans[1]=='o') && (ans[2]=='k')) {
-					log_printf("ntp: sync ok %d", ntpsync);
-				} else {
-					log_printf("ntp: error setting sync %d", ntpsync);
-					strcpy(ntpip, "0.0.0.0");
-				}
+			snprintf(tmp, 49, "AT+NTPRF=%d", ntpsync / 10);
+			if (at_cmd(tmp, words, 1, 99)) {
+				log_printf("ntp: sync ok %d", ntpsync);
+			} else {
+				log_printf("ntp: error setting sync=%d", ntpsync);
 			}
 		}
-
 
 	} else {
 		/* get ntp server ip */
 		ntp_serverip(ntpip, GET);
 		
 		/* get sync interval */
-		hfat_send_cmd("AT+NTPRF\r\n", sizeof("AT+NTPRF\r\n"), ans, 150);
-		if (hfat_get_words(ans, words, 4) > 0) {
-			if ((ans[0]=='+') && (ans[1]=='o') && (ans[2]=='k')) {
-				ntpsync = atoi(words[1]) * 10;
-				log_printf("ntp: sync %d", ntpsync);
-			}
+		strcpy(tmp, "AT+NTPRF");
+		if (at_cmd(tmp, words, 2, 99)) {
+			ntpsync = atoi(words[1]) * 10;
+			log_printf("ntp: sync=%d", ntpsync);
 		}
 
 		/* get enabled/disabled */
-		snprintf(tmp, 49, "AT+NTPEN\r\n");
-		hfat_send_cmd(tmp, sizeof(tmp), ans, 150);
-		if (hfat_get_words(ans, words, 2) > 0) {
-			if ((ans[0]=='+') && (ans[1]=='o') && (ans[2]=='k')) {
-				if (strcmp(words[1], "on") == 0)
-					en = 1;
-				log_printf("ntp: enabled %d", en);
-			}
+		strcpy(tmp, "AT+NTPEN");
+		if (at_cmd(tmp, words, 2, 99)) {
+			en = strcmp(words[1], "on") == 0 ? 1 : 0;
+			log_printf("ntp: enabled=%d", en);
 		}
 	}
 	
 	snprintf(rsp, 1000, ntp_config_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
-	ctime(&now), en ? "checked" : "", now_s, ntpip, ntpsync);
+	ctime(&now), en ? "checked" : "", ntpip, ntpsync);
 }	
 
 
