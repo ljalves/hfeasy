@@ -100,7 +100,7 @@ void USER_FUNC led_ctrl(char *a)
 {
 	struct hfeasy_state *state = config_get_state();
 	
-	if (*gpio_pin(GPIO_LED_WIFI) == HFM_NOPIN)
+	if (state->func_state & FUNC_LED == 0)
 		return;
 
 	if (state->cfg.wifi_led == LED_CONFIG_OFF) {

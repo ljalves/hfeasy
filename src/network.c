@@ -213,16 +213,13 @@ static void USER_FUNC httpd_page_config_network(char *url, char *rsp)
 		}
 		hfat_send_cmd("AT+WSDNS\r\n", sizeof("AT+WSDNS\r\n"), ans, 150);
 		if (hfat_get_words(ans, words, 2) > 0) {
-			if ((ans[0]=='+') && (ans[1]=='o') && (ans[2]=='k')) {
+			if ((ans[0]=='+') && (ans[1]=='o') && (ans[2]=='k'))
 				strcpy(dns, words[1]);
-			}
 		}
 	} 
 	
 	sprintf(rsp, config_page_network, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
 					dhcp ? "checked": "", ip, mask, gw, dns);
-
-	log_printf("page_size=%d\r\n", strlen(rsp));
 }
 
 
