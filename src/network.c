@@ -111,7 +111,6 @@ static void USER_FUNC httpd_page_config_wifi(char *url, char *rsp)
 				strcpy(pass, words[3]);
 			}
 		}
-
 	}
 	
 	sprintf(rsp, config_page_wifi, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
@@ -229,8 +228,9 @@ static void USER_FUNC httpd_page_config_network(char *url, char *rsp)
 
 void USER_FUNC network_init(void)
 {
-	//while (!hfnet_wifi_is_active())
-	//	msleep(100);
+	/* wait for wifi driver init */
+	while (!hfnet_wifi_is_active())
+		msleep(100);
 
 	httpd_add_page("/config_network", httpd_page_config_network, NULL);
 	httpd_add_page("/config_wifi", httpd_page_config_wifi, NULL);
