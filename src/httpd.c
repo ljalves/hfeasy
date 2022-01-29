@@ -17,7 +17,7 @@
 "\r\n"\
 "<html><body>Hello World, System RunTime:  %02d:%02d:%02d !</body></html>"
 
-extern hfhttpd_url_callback_register(void *cbk, int auth);
+extern int HSF_API hfhttpd_url_callback_register(hfhttpd_url_callback_t callback, int flag);
 
 static const char *http_header = "HTTP/1.1 200 OK\r\n"\
 "Content-type: text/%s\r\n%s"\
