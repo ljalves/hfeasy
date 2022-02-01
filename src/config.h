@@ -26,8 +26,6 @@ SOFTWARE.
 
 #include "hfeasy.h"
 
-#define CONFIG_MAX_TIMERS	10
-
 struct hfeasy_config {
 	/* config version */
 	uint8_t		ver;
@@ -58,10 +56,7 @@ struct hfeasy_config {
 	/* timers */
 	int       tz;
 	time_t    countdown[2];
-	
-	struct hfeasy_timer timers[CONFIG_MAX_TIMERS];
-	
-	//time_t    timer_on[CONFIG_MAX_TIMERS], timer_off[CONFIG_MAX_TIMERS];
+	char      cron[100];
 	
 	uint8_t   pwron_state;
 };
@@ -86,6 +81,8 @@ struct hfeasy_state {
 	struct hfeasy_config cfg;
 	
 	char module_name[30];
+
+	struct hfeasy_timer *timers;
 };
 
 #define HTTPD_AUTH  0x01

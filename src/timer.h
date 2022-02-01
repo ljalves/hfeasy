@@ -27,25 +27,31 @@ SOFTWARE.
 #include <hsf.h>
 
 
+typedef struct {
+    uint8_t seconds[8];
+    uint8_t minutes[8];
+    uint8_t hours[3];
+    uint8_t days_of_week[1];
+    uint8_t days_of_month[4];
+    uint8_t months[2];
+} cron_expr;
+
+//struct hfeasy_timer;
+
 struct hfeasy_timer {
-	time_t    time;
+	cron_expr cron;
+	//time_t    time;
 	uint16_t  flags;
+	struct hfeasy_timer *next;
 };
 
-#define TIMER_TURN_ON      (1 << 0)
-#define TIMER_TURN_OFF     (1 << 1)
+#define TIMER_DISABLED     0x0000
+#define TIMER_TURN_ON      0x1000
+#define TIMER_TURN_OFF     0x2000
+#define TIMER_TOGGLE       0x4000
+#define TIMER_ACTIVE       0x8000
 
-#define TIMER_WEEK_MON     (1 << 2)
-#define TIMER_WEEK_TUE     (1 << 3)
-#define TIMER_WEEK_WED     (1 << 4)
-#define TIMER_WEEK_THU     (1 << 5)
-#define TIMER_WEEK_FRI     (1 << 6)
-#define TIMER_WEEK_SAT     (1 << 7)
-#define TIMER_WEEK_SUN     (1 << 8)
-
-#define TIMER_DAYLY        (1 << 9)
-#define TIMER_WEEKLY       (1 << 9)
-#define TIMER_MONTHLY      (1 << 10)
+#define TIMER_VALUE_MASK   0x00ff
 
 
 void USER_FUNC timer_init(void);

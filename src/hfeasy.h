@@ -7,6 +7,10 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <time.h>
+#include <ctype.h>
+#include <errno.h>
+#include <limits.h>
+#include <math.h>
 
 #include "gpio.h"
 #include "httpd.h"
