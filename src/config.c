@@ -199,7 +199,7 @@ static const char *main_page =
 	"<tr><td><a href=\"hf\">HF</a>"\
 	"</table>"\
 	"<hr><form action=\"save\" method=\"GET\"><input type=\"submit\" value=\"Save changes to flash and restart\" name=\"save\"></form>"\
-	"<hr><form action=\"restart\" method=\"GET\"><input type=\"submit\" value=\"Restart\" name=\"restart\"></form>"\
+	"<hr><form action=\"save\" method=\"GET\"><input type=\"submit\" value=\"Restart\" name=\"restart\"></form>"\
 	"<script type=\"text/javascript\">"\
 	"const bon = document.getElementById('btn_on');"\
 	"const boff = document.getElementById('btn_off');"\
@@ -210,7 +210,7 @@ static const char *main_page =
 
 static void USER_FUNC httpd_page_main(char *url, char *rsp)
 {
-	sprintf(rsp, main_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
+	snprintf(rsp, 1000, main_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
 			HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR);
 
 	log_printf("page_size=%d\r\n", strlen(rsp));
@@ -923,7 +923,18 @@ static void USER_FUNC config_load(uint8_t reset)
 	if (state.cfg.ver != CONFIG_MAGIC_VER1) {
 		/* set APSTA mode */
 		char rsp[64] = {0};
-		hfat_send_cmd("AT+WMODE=APSTA\r\n", sizeof("AT+WMODE=APSTA\r\n"), rsp, 32);
+		char cmd[64];
+		strcpy(cmd,"AT+WMODE=APSTA\r\n");
+		hfat_send_cmd(cmd, strlen(cmd)+1, rsp, 32);
+		strcpy(cmd,"AT+WAP=11BGN,HFeasy,AUTO\r\n");
+		hfat_send_cmd(cmd, strlen(cmd)+1, rsp, 32);
+		strcpy(cmd,"AT+WAKEY=OPEN,NONE\r\n");
+		hfat_send_cmd(cmd, strlen(cmd)+1, rsp, 32);
+		strcpy(cmd,"AT+LANN=10.10.100.254,255.255.255.0\r\n");
+		hfat_send_cmd(cmd, strlen(cmd)+1, rsp, 32);
+		strcpy(cmd,"AT+WADHCP=on,150,200\r\n");
+		hfat_send_cmd(cmd, strlen(cmd)+1, rsp, 32);
+		
 
 		/* init config data */
 		memset(&state.cfg, 0, sizeof(struct hfeasy_config));
