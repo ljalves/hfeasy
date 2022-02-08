@@ -53,6 +53,9 @@ const int gpio_default_config[DEVICE_END - 1][11]	=
 	
 	/* Orvibo S20 WiWo-S20-E2 */
 	{ 12, 20, 45, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB100, 0},
+
+	/* (Lidl) Silvercrest SWS-A1 */
+	{ 44, 11, 45, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB100, GPIO_INV_LED},
 };
 
 #elif defined(__LPXX30__)
@@ -387,6 +390,7 @@ static const char *config_page_device =
 	"<option %s value=3>us_dimmer</option>"\
 	"<option %s value=4>us_wall_sw</option>"\
 	"<option %s value=5>g-homa</option>"
+	"<option %s value=6>sws-a1</option>"
 #elif defined(__LPXX30__)
 	"<option %s value=1>plug</option>"
 #endif

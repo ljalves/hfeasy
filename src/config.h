@@ -109,6 +109,7 @@ enum {
 	DEVICE_USWALLSW,
 	DEVICE_GHOMA,
 	DEVICE_WIWOS20,
+	DEVICE_SWSA1,
 #elif defined(__LPXX30__)
 	DEVICE_PLUG,
 #endif
