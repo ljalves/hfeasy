@@ -13,7 +13,7 @@ static inline void USER_FUNC set_relay_pin(uint8_t st)
 {
 	struct hfeasy_state *state = config_get_state();
 	
-	if (state->cfg.gpio_config[10] & GPIO_INV_RELAY)
+	if (state->cfg.gpio_config[CONFIG_GPIO_CONFIG] & GPIO_INV_RELAY)
 		st ^= 1;
 	
 	if (st)
@@ -50,12 +50,12 @@ void USER_FUNC relay_set(uint8_t action, uint8_t source)
 
 	/* set gpio */
 	if (state->relay_state) {
-		if (state->cfg.wifi_led == LED_CONFIG_RELAY)
+		if (state->cfg.led1 == LED_CONFIG_RELAY)
 			led_ctrl("n");
 		
 		set_relay_pin(1);
 	} else {
-		if (state->cfg.wifi_led == LED_CONFIG_RELAY)
+		if (state->cfg.led1 == LED_CONFIG_RELAY)
 			led_ctrl("f");
 
 		set_relay_pin(0);

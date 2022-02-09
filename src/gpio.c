@@ -324,7 +324,7 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 		if (dimmer_val != -1)
 			dimmer_set((uint8_t) dimmer_val, RELAY_SRC_HTTP);
 
-		if (state->cfg.wifi_led & LED_CONFIG_HTTP)
+		if (state->cfg.led1 & LED_CONFIG_HTTP)
 			led_ctrl("n1f"); /* got data = 1 blink */
 
 		sprintf(rsp, "{ \"set\": \"%d\", \"relay_status\": \"%d\", \"level\": \"%d\" }", dimmer_val, state->relay_state, state->dimmer_level);
@@ -342,7 +342,7 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 		else
 			relay_set(0, RELAY_SRC_HTTP);
 
-		if (state->cfg.wifi_led & LED_CONFIG_HTTP)
+		if (state->cfg.led1 & LED_CONFIG_HTTP)
 			led_ctrl("n1f"); /* got data = 1 blink */
 		
 		sprintf(rsp, "{ \"set\": \"%s\", \"relay_status\": \"%d\" }", val, state->relay_state);
@@ -480,7 +480,7 @@ void USER_FUNC hfeasy_gpio_init(void)
 	struct hfeasy_state *state = config_get_state();
 	int module_type, i, j;
 
-	module_type = state->cfg.gpio_config[9];
+	module_type = state->cfg.gpio_config[CONFIG_GPIO_MODULE];
 	if (module_type > NR_MODULES) {
 		log_printf("gpio: invalid module (%d)", module_type);
 		return;
@@ -493,7 +493,7 @@ void USER_FUNC hfeasy_gpio_init(void)
 	}
 
 	/* init pin mapping */
-	for (i = 0; i < 9; i++) {
+	for (i = 0; i < CONFIG_GPIO_MODULE; i++) {
 		if (state->cfg.gpio_config[i] > gpio_module_nrpins[module_type]) {
 			log_printf("gpio: pin %d at func_id %d out of range (1~%d)",
 								state->cfg.gpio_config[i], i, gpio_module_nrpins[module_type]);

@@ -44,11 +44,11 @@ struct hfeasy_config {
 	/* module */
 	char      friendly_name[50];
 	char      httpd_settings;
-	uint8_t   wifi_led;
+	uint8_t   led1, led2;
 
 	/* gpio */
 	int       device;
-	int       gpio_config[11];
+	int       gpio_config[CONFIG_GPIO_CONFIG+1];
 	
 	int32_t   recovery_time;
 	int32_t   debounce_time;
@@ -96,8 +96,8 @@ struct hfeasy_state {
 #define FUNC_BTN_DN    0x0020
 #define FUNC_BUZZER    0x0040
 #define FUNC_I2C       0x0080
-#define FUNC_LED       0x0100
-
+#define FUNC_LED1      0x0100
+#define FUNC_LED2      0x0200
 
 
 enum {

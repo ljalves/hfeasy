@@ -33,29 +33,29 @@ static hftimer_handle_t reset_timer;
 
 #if defined(__LPXX00__)
 
-/* wifi_led, relay, but_push, but_togg, but_up, but_dn, buzz, i2c_ck, i2c_dt, inverted_outputs */
-const int gpio_default_config[DEVICE_END - 1][11]	= 
+/* led1, led2, relay, but_push, but_togg, but_up, but_dn, buzz, i2c_ck, i2c_dt, inverted_outputs */
+const int gpio_default_config[DEVICE_END - 1][CONFIG_GPIO_CONFIG + 1]	= 
 {
 	/* wall socket module */
-	{	0, 10, 0, 8, 0, 0, 9, 0, 0, HFM_TYPE_LPT100F, 0},
+	{	0, 0, 10, 0, 8, 0, 0, 9, 0, 0, HFM_TYPE_LPT100F, 0},
 	
 	/* plug */
-	{	43, 44, 30, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB100, GPIO_INV_LED},
+	{	43, 0, 44, 30, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB100, GPIO_INV_LED1},
 	
 	/* us dimmer */
-	{	6, 0, 10, 0, 8, 9, 0, 4, 7, HFM_TYPE_LPT100F, GPIO_INV_LED},
+	{	6, 0, 0, 10, 0, 8, 9, 0, 4, 7, HFM_TYPE_LPT100F, GPIO_INV_LED1},
 	
 	/* us wall switch */
-	{	10, 8, 9, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPT100F, GPIO_INV_LED},
+	{	10, 0, 8, 9, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPT100F, GPIO_INV_LED1},
 	
 	/* obi g-homa */
-	{ 11, 12, 18, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB100, 0 },
+	{ 11, 0, 12, 18, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB100, 0 },
 	
 	/* Orvibo S20 WiWo-S20-E2 */
-	{ 12, 20, 45, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB100, 0},
+	{ 12, 11, 20, 45, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB100, GPIO_DUALLED2T},
 
 	/* (Lidl) Silvercrest SWS-A1 */
-	{ 44, 11, 45, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB100, GPIO_INV_LED},
+	{ 44, 43, 11, 45, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB100, GPIO_INV_LED1 | GPIO_INV_LED2},
 };
 
 #elif defined(__LPXX30__)
@@ -272,9 +272,9 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 
 	ret = httpd_arg_find(url, "led", tmp);
 	if (ret > 0) {
-		state.cfg.wifi_led = atoi(tmp);
-		if (state.cfg.wifi_led >= LED_CONFIG_END)
-			state.cfg.wifi_led = 0;
+		state.cfg.led1 = atoi(tmp);
+		if (state.cfg.led1 >= LED_CONFIG_END)
+			state.cfg.led1 = 0;
 	}
 	
 	ret = httpd_arg_find(url, "pwron", tmp);
@@ -286,17 +286,17 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 		state.cfg.friendly_name, state.module_name,
 		state.cfg.httpd_settings & HTTPD_AUTH ? "checked" : "",
 		state.cfg.httpd_settings & HTTPD_CORS ? "checked" : "",
-		state.cfg.wifi_led == 0 ? "selected" : "",
-		state.cfg.wifi_led == 1 ? "selected" : "",
-		state.cfg.wifi_led == 2 ? "selected" : "",
-		state.cfg.wifi_led == 3 ? "selected" : "",
-		state.cfg.wifi_led == 4 ? "selected" : "",
-		state.cfg.wifi_led == 5 ? "selected" : "",
-		state.cfg.wifi_led == 6 ? "selected" : "",
-		state.cfg.pwron_state
+		state.cfg.led1 == 0 ? "selected" : "",
+		state.cfg.led1 == 1 ? "selected" : "",
+		state.cfg.led1 == 2 ? "selected" : "",
+		state.cfg.led1 == 3 ? "selected" : "",
+		state.cfg.led1 == 4 ? "selected" : "",
+		state.cfg.led1 == 5 ? "selected" : "",
+		state.cfg.led1 == 6 ? "selected" : "",
+		(int)state.cfg.pwron_state
 	);
 
-	if (state.cfg.wifi_led == LED_CONFIG_FIND) {
+	if (state.cfg.led1 == LED_CONFIG_FIND) {
 		led_ctrl("n5f5n2f2n2f2n5f5n1f1r"); /* "find" blink pattern */
 	} else {
 		led_ctrl("f");
@@ -461,15 +461,16 @@ static const char *config_page_gpio =
 	"</table>"\
 	"<br>"\
 	"<table><tr><th>Function<th>Pin nr (0=disabled)"\
-	"<TR><TD>WiFi LED<TD><input %s type=\"text\" name=\"f0\" value=\"%d\"> Active low:<input %s type=\"checkbox\" name=\"inv_led\" value=\"1\" %s>"\
-	"<TR><TD>Relay<TD><input %s type=\"text\" name=\"f1\" value=\"%d\"> Active low:<input %s type=\"checkbox\" name=\"inv_relay\" value=\"1\" %s>"\
-	"<TR><TD>Button (push)<TD><input %s type=\"text\" name=\"f2\" value=\"%d\">"\
-	"<TR><TD>Button (toggle)<TD><input %s type=\"text\" name=\"f3\" value=\"%d\">"\
-	"<TR><TD>Button Up<TD><input %s type=\"text\" name=\"f4\" value=\"%d\">"\
-	"<TR><TD>Button Down<TD><input %s type=\"text\" name=\"f5\" value=\"%d\">"\
-	"<TR><TD>Buzzer<TD><input %s type=\"text\" name=\"f6\" value=\"%d\">"\
-	"<TR><TD>Dimmer I2C CLK<TD><input %s type=\"text\" name=\"f7\" value=\"%d\">"\
-	"<TR><TD>Dimmer I2C DTA<TD><input %s type=\"text\" name=\"f8\" value=\"%d\">"\
+	"<TR><TD>LED1<TD><input %s type=\"text\" name=\"f0\" value=\"%d\"> Active low:<input %s type=\"checkbox\" name=\"inv_led1\" value=\"1\" %s>"\
+	"<TR><TD>LED2<TD><input %s type=\"text\" name=\"f1\" value=\"%d\"> Active low:<input %s type=\"checkbox\" name=\"inv_led2\" value=\"1\" %s>"\
+	"<TR><TD>Relay<TD><input %s type=\"text\" name=\"f2\" value=\"%d\"> Active low:<input %s type=\"checkbox\" name=\"inv_relay\" value=\"1\" %s>"\
+	"<TR><TD>Button (push)<TD><input %s type=\"text\" name=\"f3\" value=\"%d\">"\
+	"<TR><TD>Button (toggle)<TD><input %s type=\"text\" name=\"f4\" value=\"%d\">"\
+	"<TR><TD>Button Up<TD><input %s type=\"text\" name=\"f5\" value=\"%d\">"\
+	"<TR><TD>Button Down<TD><input %s type=\"text\" name=\"f6\" value=\"%d\">"\
+	"<TR><TD>Buzzer<TD><input %s type=\"text\" name=\"f7\" value=\"%d\">"\
+	"<TR><TD>Dimmer I2C CLK<TD><input %s type=\"text\" name=\"f8\" value=\"%d\">"\
+	"<TR><TD>Dimmer I2C DTA<TD><input %s type=\"text\" name=\"f9\" value=\"%d\">"\
 	"</table><input %s type=\"submit\" value=\"Apply\"></form>"\
 	"</body></html>";
 
@@ -491,27 +492,33 @@ static void USER_FUNC httpd_page_config_gpio(char *url, char *rsp)
 			gpio_deinit();
 #endif
 			
-			state.cfg.gpio_config[9] = atoi(tmp);
+			state.cfg.gpio_config[CONFIG_GPIO_MODULE] = atoi(tmp);
 		
-			for (i = 0; i < 9; i++) {
+			for (i = 0; i < CONFIG_GPIO_MODULE; i++) {
 				sprintf(f, "f%d", i);
 				ret = httpd_arg_find(url, f, tmp);
 				if (ret > 0)
 					state.cfg.gpio_config[i] = atoi(tmp);
 			}
 
-			state.cfg.gpio_config[10] &= ~GPIO_INV_LED;
-			ret = httpd_arg_find(url, "inv_led", tmp);
+			state.cfg.gpio_config[CONFIG_GPIO_CONFIG] &= ~GPIO_INV_LED1;
+			ret = httpd_arg_find(url, "inv_led1", tmp);
 			if (ret > 0) {
 				if (tmp[0] == '1')
-					state.cfg.gpio_config[10] |= GPIO_INV_LED;
+					state.cfg.gpio_config[CONFIG_GPIO_CONFIG] |= GPIO_INV_LED1;
+			}
+			state.cfg.gpio_config[CONFIG_GPIO_CONFIG] &= ~GPIO_INV_LED2;
+			ret = httpd_arg_find(url, "inv_led2", tmp);
+			if (ret > 0) {
+				if (tmp[0] == '1')
+					state.cfg.gpio_config[CONFIG_GPIO_CONFIG] |= GPIO_INV_LED2;
 			}
 			
-			state.cfg.gpio_config[10] &= ~GPIO_INV_RELAY;
+			state.cfg.gpio_config[CONFIG_GPIO_CONFIG] &= ~GPIO_INV_RELAY;
 			ret = httpd_arg_find(url, "inv_relay", tmp);
 			if (ret > 0) {
 				if (tmp[0] == '1')
-					state.cfg.gpio_config[10] |= GPIO_INV_RELAY;
+					state.cfg.gpio_config[CONFIG_GPIO_CONFIG] |= GPIO_INV_RELAY;
 			}
 
 #ifdef __LPXX00__1
@@ -529,25 +536,28 @@ static void USER_FUNC httpd_page_config_gpio(char *url, char *rsp)
 		
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled",
 #if defined (__LPXX00__)
-		state.cfg.gpio_config[9] == HFM_TYPE_LPB100 ? "selected" : "",
-		state.cfg.gpio_config[9] == HFM_TYPE_LPT100F ? "selected" : "",
+		state.cfg.gpio_config[CONFIG_GPIO_MODULE] == HFM_TYPE_LPB100 ? "selected" : "",
+		state.cfg.gpio_config[CONFIG_GPIO_MODULE] == HFM_TYPE_LPT100F ? "selected" : "",
 #elif defined(__LPXX30__)
-		state.cfg.gpio_config[9] == HFM_TYPE_LPB130 ? "selected" : "",
+		state.cfg.gpio_config[CONFIG_GPIO_MODULE] == HFM_TYPE_LPB130 ? "selected" : "",
 #endif
 		/* gpios*/
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[0],
-		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[10] & GPIO_INV_LED ? "checked": "",
+		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[CONFIG_GPIO_CONFIG] & GPIO_INV_LED1 ? "checked": "",
 		
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[1],
-		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[10] & GPIO_INV_RELAY ? "checked": "",
+		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[CONFIG_GPIO_CONFIG] & GPIO_INV_LED1 ? "checked": "",
 		
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[2],
+		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[CONFIG_GPIO_CONFIG] & GPIO_INV_RELAY ? "checked": "",
+		
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[3],
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[4],
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[5],
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[6],
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[7],
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[8],
+		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[9],
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled"
 	);
 	log_printf("page_size=%d\r\n", strlen(rsp));
@@ -789,7 +799,7 @@ static int sys_event_callback(uint32_t event_id, void *param)
 			get_sta_settings(tmp);
 			if (strcmp(tmp, "static") == 0) {
 				state.has_ip = 1;
-				if (state.cfg.wifi_led == LED_CONFIG_WIFI)
+				if (state.cfg.led1 == LED_CONFIG_WIFI)
 					led_ctrl("n");
 
 			}		
@@ -807,7 +817,7 @@ static int sys_event_callback(uint32_t event_id, void *param)
 				p_ip = (uint32_t*) param;
 				log_printf("network: dhcp ok got ip %s", inet_ntoa(*p_ip));
 				state.has_ip = 1;
-				if (state.cfg.wifi_led == LED_CONFIG_WIFI)
+				if (state.cfg.led1 == LED_CONFIG_WIFI)
 					led_ctrl("n");
 				else
 					led_ctrl("f");
