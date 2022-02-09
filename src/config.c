@@ -390,7 +390,8 @@ static const char *config_page_device =
 	"<option %s value=3>us_dimmer</option>"\
 	"<option %s value=4>us_wall_sw</option>"\
 	"<option %s value=5>g-homa</option>"
-	"<option %s value=6>sws-a1</option>"
+	"<option %s value=6>wiwo-s20</option>"
+	"<option %s value=7>sws-a1</option>"
 #elif defined(__LPXX30__)
 	"<option %s value=1>plug</option>"
 #endif
@@ -441,6 +442,8 @@ static void USER_FUNC httpd_page_config_device(char *url, char *rsp)
 		,state.cfg.device == 3 ? "selected" : ""
 		,state.cfg.device == 4 ? "selected" : ""
 		,state.cfg.device == 5 ? "selected" : ""
+		,state.cfg.device == 6 ? "selected" : ""
+		,state.cfg.device == 7 ? "selected" : ""
 #endif
 	);
 }
