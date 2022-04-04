@@ -1,21 +1,14 @@
-
+//#include <unistd.h>
 #include "hfeasy.h"
 
-#define HTTP_SERVER_PORT	81
+#define HTTP_SERVER_PORT	8080
 #define HTTPD_MAX_PAGES		20
 
-#define HTTPS_RECV_TIMEOUT 3000
-//#define HTTPS_RECV_BUF_LEN 2048
+#define HTTPD_RECV_TIMEOUT 3000
 
 #define HTTPD_CORS_HEADER "Access-Control-Allow-Origin: *\r\n"
 
-//static char https_recv_buf[HTTPS_RECV_BUF_LEN];
 
-#define HttpRspDataFormat      "HTTP/1.1 200 OK\r\n"\
-"Content-type: text/html\r\n"\
-"Content-length: 72\r\n"\
-"\r\n"\
-"<html><body>Hello World, System RunTime:  %02d:%02d:%02d !</body></html>"
 
 extern int HSF_API hfhttpd_url_callback_register(hfhttpd_url_callback_t callback, int flag);
 
@@ -23,6 +16,23 @@ static const char *http_header = "HTTP/1.1 200 OK\r\n"\
 "Content-type: text/%s\r\n%s"\
 "Server: HFEASY\r\n"
 "Connection: close\r\n\r\n";
+
+static const char *redirect_page	=
+	"<!DOCTYPE html><html><head>"\
+	"<script language=\"JavaScript\">"\
+	"document.write('<meta http-equiv=\"refresh\" content=\"0;url=' + window.location.protocol + '//' + window.location.hostname + ':8080/\"/>');"\
+	"</script>"\
+	"</head><body>"\
+	"</body></html>";
+
+static const char *hf_redirect_page	=
+	"<!DOCTYPE html><html><head>"\
+	"<script language=\"JavaScript\">"\
+	"document.write('<meta http-equiv=\"refresh\" content=\"0;url=' + window.location.protocol + '//' + window.location.hostname + '/%s\"/>');"\
+	"</script>"\
+	"</head><body>"\
+	"</body></html>";
+
 
 
 struct httpd_page {
@@ -122,6 +132,15 @@ static int USER_FUNC httpd_callback(char *url, char *rsp)
 		return -1;
 	}
 	
+	if (strcmp(url, "/") == 0) {
+		s = sprintf(r, http_header, "html", state->cfg.httpd_settings & HTTPD_CORS ? HTTPD_CORS_HEADER : "");
+		r += s;
+		strcat(r, redirect_page);
+		return 0;
+	}
+	
+	/*
+	
 	while (p->url != NULL) {
 		strncpy(buf, url, 50);
 		buf[49] = '\0';
@@ -139,11 +158,12 @@ static int USER_FUNC httpd_callback(char *url, char *rsp)
 			return 0;
 		}
 		p++;
-	}
+	}*/
+	
 	return -1;
 }
 
-#if 0
+#if 1
 static int http_get_alldata_len(char *data)
 {
 	char *p1 = NULL, *p2 = NULL;
@@ -171,62 +191,49 @@ static int https_recv_data(int fd, char *buffer, int len, int timeout_ms)
 {
 	fd_set fdR;
 	struct timeval timeout;
-	int ret, tmpLen, contenLen=0, recvLen = 0;
-	
+	int ret, tmpLen, recvLen = 0;
+	int contenLen=0;
+
 	while(1) {
-		FD_ZERO(&fdR);
-		FD_SET(fd, &fdR);
 		if(recvLen <= 0) {
 			timeout.tv_sec = timeout_ms / 1000;
 			timeout.tv_usec = timeout_ms % 1000 * 1000;
 		} else {
-			//fast close
 			timeout.tv_sec = 0;
-			timeout.tv_usec = 500 * 1000;
+			timeout.tv_usec = 100 * 1000;
 		}
-		
+		FD_ZERO(&fdR);
+		FD_SET(fd, &fdR);
 		ret = select(fd + 1, &fdR, NULL, NULL, &timeout);
 		if (ret <= 0) {
 			break;
 		} else if (FD_ISSET(fd, &fdR)) {
 			tmpLen = read(fd, buffer + recvLen, len - recvLen);
+			//log_printf("read... %d %d", recvLen, tmpLen);
+
 			if(tmpLen <= 0)
 				break;
+
 			recvLen += tmpLen;
 
 			contenLen = http_get_alldata_len(buffer);
-			if((contenLen > 0) && (recvLen >= contenLen)) 
+			if((contenLen > 0) && (recvLen >= contenLen))
 				break;
 		}
 	}
 
-	u_printf("\r\n******* contentLen=%u recvLen=%u \r\n", contenLen, recvLen);
+	log_printf("\r\n******* contentLen=%d recvLen=%d \r\n", contenLen, recvLen);
+	buffer[recvLen++] = '\0';
 	
-	buffer[recvLen] = '\0';
-	
-	u_printf("size=%d\r\n", strlen(buffer));
-
-	
-	
-	int i;
-	char buffer2[101];
-	for (i = 0; i < recvLen; i+=100) {
-		strncpy(buffer2, buffer+i, recvLen-i < 100 ? recvLen-i : 100);
-		buffer2[100] = '\0';
-		u_printf("%s", buffer2);
-	}
-	u_printf("\r\n-----------------------\r\n");
-	msleep(1000);
-
 	char *sp1, *sp2;
 	sp1 = strchr(buffer, ' ');
 	if (sp1 == NULL) {
-		u_printf("sp1 not found!\r\n");
+		log_printf("sp1 not found!\r\n");
 		return -1;
 	}
 	sp2 = strchr(sp1+1, ' ');
 	if (sp2 == NULL) {
-		u_printf("sp2 not found!\r\n");
+		log_printf("sp2 not found!\r\n");
 		return -1;
 	}
 	*sp2 = '\0';
@@ -239,19 +246,19 @@ static int https_recv_data(int fd, char *buffer, int len, int timeout_ms)
 
 	if (recvLen > 5) {
 		struct httpd_page *p = httpd_pages;
-		char buf[50], *a;
+		char buf[201], *a;
 		char *r = buffer;
-		char url[50];
+		char url[201];
 
-		strncpy(url, sp1+1, 50);
+		strncpy(url, sp1+1, 200);
 		
-		u_printf("url='%s' size=%d\r\n", url, strlen(url));
+		log_printf("url='%s' size=%d\r\n", url, strlen(url));
 		
 		while (p->url != NULL) {
 			int s;
 			struct hfeasy_state* state = config_get_state();
-			strncpy(buf, url, 50);
-			buf[49] = '\0';
+			strncpy(buf, url, 200);
+			buf[200] = '\0';
 			a = strchr(buf, '?');
 			if (a != NULL)
 				*a = '\0';
@@ -263,7 +270,7 @@ static int https_recv_data(int fd, char *buffer, int len, int timeout_ms)
 				r += s;
 				p->callback(url, r);
 				write(fd, buffer, strlen(buffer));
-				u_printf("'%s' size=%d\r\n", url, strlen(buffer));
+				log_printf("'%s' size=%d\r\n", url, strlen(buffer));
 				msleep(1000);
 				return 0;
 			}
@@ -275,11 +282,15 @@ static int https_recv_data(int fd, char *buffer, int len, int timeout_ms)
 
 static void hf_http_server(void)
 {
+	char *https_recv_buf;
 	struct sockaddr_in local_addr, remote_addr;
 	int listenfd, remotefd;
 	
+	https_recv_buf = hfmem_malloc(HTTPD_RECV_BUF_LEN);
+	
 	if((listenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		u_printf("HTTP: socket creat failed!\r\n");
+		hfmem_free(https_recv_buf);
 		hfthread_destroy(NULL);
 		return;
 	}
@@ -290,12 +301,14 @@ static void hf_http_server(void)
 
 	if(bind(listenfd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
 		u_printf("HTTP: socket bind failed!\r\n");
+		hfmem_free(https_recv_buf);
 		hfthread_destroy(NULL);
 		return ;
 	}
 	
 	if(listen(listenfd, 10) == -1) {
 		u_printf("HTTP: socket listen failed!\r\n");
+		hfmem_free(https_recv_buf);
 		hfthread_destroy(NULL);
 		return;
 	}
@@ -306,14 +319,15 @@ static void hf_http_server(void)
 	while(1) {
 		remotefd = accept(listenfd, (struct sockaddr *)&remote_addr, (socklen_t *)(&len));
 		if(remotefd >= 0) {
-			memset(https_recv_buf, 0, HTTPS_RECV_BUF_LEN);
-			https_recv_data(remotefd, https_recv_buf, HTTPS_RECV_BUF_LEN-1, HTTPS_RECV_TIMEOUT);
+			memset(https_recv_buf, 0, HTTPD_RECV_BUF_LEN);
+			https_recv_data(remotefd, https_recv_buf, HTTPD_RECV_BUF_LEN-1, HTTPD_RECV_TIMEOUT);
 		}
 
 		close(remotefd);
 	}
 
-	//u_printf("HTTPS: https_server exit!\r\n");
+	//u_printf("HTTPD: https_server exit!\r\n");
+	//hfmem_free(https_recv_buf);
 	//hfthread_destroy(NULL);
 	return;
 }
@@ -343,6 +357,15 @@ void styles_cbk(char *url, char *rsp)
 	strcpy(rsp, css_page);
 }
 
+void iweb_redirect_cbk(char *url, char *rsp)
+{
+	sprintf(rsp, hf_redirect_page, "iweb.html");
+}
+
+void hf_redirect_cbk(char *url, char *rsp)
+{
+	sprintf(rsp, hf_redirect_page, "hf");
+}
 
 void USER_FUNC httpd_init(void)
 {
@@ -352,8 +375,8 @@ void USER_FUNC httpd_init(void)
 		log_printf("start httpd fail");
 	}
 	
-#if 0
-	if(hfthread_create((PHFTHREAD_START_ROUTINE)hf_http_server, "hfhttp_server", 2048, NULL, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS) {
+#if 1
+	if(hfthread_create((PHFTHREAD_START_ROUTINE)hf_http_server, "hfhttp_server", 512, NULL, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS)
 		u_printf("error starting http server thread\r\n");
 #endif
 	
@@ -362,4 +385,6 @@ void USER_FUNC httpd_init(void)
 		u_printf("error registering url callback\r\n");
 	
 	httpd_add_page("/styles.css", styles_cbk, "css");
+	httpd_add_page("/iweb.html", iweb_redirect_cbk, "html");
+	httpd_add_page("/hf", hf_redirect_cbk, "html");
 }
