@@ -24,7 +24,7 @@ SOFTWARE.
 #include <stdarg.h>
 #include "hfeasy.h"
 
-#define CONFIG_MAGIC_VER1  0xcf
+#define CONFIG_MAGIC_VER1  0xcd
 #define CONFIG_OFFSET      0x00
 #define CONFIG_SIZE        (sizeof(struct hfeasy_config))
 
@@ -213,7 +213,7 @@ static const char *main_page =
 
 static void USER_FUNC httpd_page_main(char *url, char *rsp)
 {
-	snprintf(rsp, 1000, main_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
+	snprintf(rsp, HTTPD_MAX_PAGE_SIZE, main_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
 			HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR);
 
 	log_printf("page_size=%d\r\n", strlen(rsp));
@@ -293,6 +293,7 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 		state.cfg.led1 == 4 ? "selected" : "",
 		state.cfg.led1 == 5 ? "selected" : "",
 		state.cfg.led1 == 6 ? "selected" : "",
+		state.cfg.led1 == 7 ? "selected" : "",
 		(int)state.cfg.pwron_state
 	);
 
