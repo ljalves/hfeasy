@@ -2,6 +2,26 @@
 #include "hfeasy.h"
 
 
+
+void get_ip_addr(char *ip)
+{
+	char ans[150];
+	char *words[5] = {NULL};
+	
+	if (ip == NULL)
+		return;
+	
+	hfat_send_cmd("AT+WANN\r\n", sizeof("AT+WANN\r\n"), ans, 150);
+	if (hfat_get_words(ans, words, 5) > 0) {
+		if ((ans[0]=='+') && (ans[1]=='o') && (ans[2]=='k')) {
+			strcpy(ip, words[2]);
+		}
+	} else {
+		strcpy(ip, "");
+	}
+}
+
+
 static const char *config_page_wifi =
 	"<!DOCTYPE html><html><head><title>HFeasy config v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
 	"<h1>WiFi</h1><hr>"\
