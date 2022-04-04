@@ -32,16 +32,18 @@ SOFTWARE.
 #define MQTT_PING_PERIOD	30  /* sec */
 #define MQTT_PING_COUNT		(MQTT_PING_PERIOD * (1000 / MQTT_SYNC_DELAY))
 
-const char *mqtt_discovery_switch = "{\"name\": \"%s\", \"obj_id\": \"%s\", \"unique_id\": \"%s\", "\
+const char *mqtt_discovery_switch = "{\"name\":\"%s\",\"obj_id\":\"%s\",\"unique_id\":\"%s\","\
 		"\"cmd_t\": \"%s\", \"stat_t\": \"%s\", "\
-		"\"avty_t\": \"%s\", \"pl_avail\": \"Online\", \"pl_not_avail\": \"Offline\", "\
-		"\"pl_on\": \"%s\", \"pl_off\": \"%s\", \"sw\": \"v%d.%d\"}";
+		"\"avty_t\": \"%s\", \"pl_avail\": \"Online\", \"pl_not_avail\": \"Offline\","\
+		"\"pl_on\": \"%s\", \"pl_off\": \"%s\","\
+		"\"dev\": {\"name\":\"HFeasy\",\"sw\":\"v%d.%d\",\"mdl\":\"mod%d\",\"identifiers\":[\"%s\"],\"cu\":\"http://%s:8080/\"}}";
 
-const char *mqtt_discovery_dimmer = "{\"name\": \"%s\", \"obj_id\": \"%s\", \"unique_id\": \"%s\", "\
-		"\"cmd_t\": \"%s\", \"stat_t\": \"%s\", "\
+const char *mqtt_discovery_dimmer = "{\"name\":\"%s\",\"obj_id\":\"%s\",\"unique_id\":\"%s\", "\
+		"\"cmd_t\":\"%s\",\"stat_t\":\"%s\","\
 		"\"bri_cmd_t\": \"%s\", \"bri_stat_t\": \"%s\", \"bri_scl\": \"%d\", "\
 		"\"avty_t\": \"%s\", \"pl_avail\": \"Online\", \"pl_not_avail\": \"Offline\", "\
-		"\"pl_on\": \"%s\", \"pl_off\": \"%s\", \"sw\": \"v%d.%d\"}";
+		"\"pl_on\": \"%s\", \"pl_off\":\"%s\","\
+		"\"dev\": {\"name\":\"HFeasy\",\"sw\":\"v%d.%d\",\"mdl\":\"mod%d\",\"identifiers\":[\"%s\"],\"cu\":\"http://%s:8080/\"}}";
 
 enum {
 	MQTTCLI_STATE_IDLE = 0,
@@ -228,6 +230,9 @@ static void USER_FUNC mqttcli_send_autodiscovery(void)
 	//char cmnd_t[60], stat_t[60], avail_t[60], bri_cmnd_t[60], bri_stat_t[60];
 	char *msg, *topic;
 	char *cmnd_t, *stat_t, *avail_t, *bri_cmnd_t, *bri_stat_t;
+	char ip_addr[20];
+	
+	get_ip_addr(ip_addr);
 	
 	msg = hfmem_malloc(500 + 50 * 6);
 	if (msg == NULL) {
@@ -251,7 +256,8 @@ static void USER_FUNC mqttcli_send_autodiscovery(void)
 			state->cfg.friendly_name, state->module_name, state->mac_addr_s,
 			cmnd_t, stat_t,
 			avail_t, state->cfg.mqtt_on_value, state->cfg.mqtt_off_value,
-			(int)HFEASY_VERSION_MAJOR, (int)HFEASY_VERSION_MINOR);
+			(int)HFEASY_VERSION_MAJOR, (int)HFEASY_VERSION_MINOR,
+			state->cfg.device, state->mac_addr_s, ip_addr);
 		hfeasy_mqtt_publish(&mqttcli, topic, msg, strlen(msg), MQTT_PUBLISH_QOS_0);
 		log_printf("%d:%s", strlen(msg), msg);
 	}
@@ -265,7 +271,8 @@ static void USER_FUNC mqttcli_send_autodiscovery(void)
 			state->cfg.friendly_name, state->module_name, state->mac_addr_s,
 			cmnd_t, stat_t, bri_cmnd_t, bri_stat_t, (int)DIMMER_MAX_LEVEL,
 			avail_t, state->cfg.mqtt_on_value, state->cfg.mqtt_off_value,
-			(int)HFEASY_VERSION_MAJOR, (int)HFEASY_VERSION_MINOR);
+			(int)HFEASY_VERSION_MAJOR, (int)HFEASY_VERSION_MINOR,
+			state->cfg.device, state->mac_addr_s, ip_addr);
 		hfeasy_mqtt_publish(&mqttcli, topic, msg, strlen(msg), MQTT_PUBLISH_QOS_0);
 		log_printf("%d:%s", strlen(msg), msg);
 	}
