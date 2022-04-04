@@ -535,12 +535,19 @@ void USER_FUNC hfeasy_gpio_init(void)
 	}
 	
 	debounce_timer = hftimer_create("debouncer", state->cfg.debounce_time, false, HFTIMER_ID_DEBOUNCE, debounce_timer_handler, 0);
+	if (debounce_timer == NULL) {
+		log_printf("gpio: error creating debounce timer");
+	}
 	recovery_timer = hftimer_create("recovery", state->cfg.recovery_time, false, HFTIMER_ID_RECOVERY, recovery_timer_handler, 0);
-
-	if(hfthread_create((PHFTHREAD_START_ROUTINE)button_handler, "button_handler", 128, NULL, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS) {
-		log_printf("error starting button_handler thread\r\n");
+	if (recovery_timer == NULL) {
+		log_printf("gpio: error creating recovery timer");
 	}
 
+	if (state->func_state & FUNC_BTN_PUSH) {
+		if(hfthread_create((PHFTHREAD_START_ROUTINE)button_handler, "button_handler", 128, NULL, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS) {
+			log_printf("error starting button_handler thread\r\n");
+		}
+	}
 	
 	httpd_add_page("/state", switch_state_page, NULL);
 	httpd_add_page("/ctrl", switch_ctrl_page, NULL);
