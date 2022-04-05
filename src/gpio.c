@@ -384,7 +384,9 @@ static void USER_FUNC recovery_mode(void)
 
 static void USER_FUNC recovery_timer_handler(hftimer_handle_t timer)
 {
-	if (recovery_counter > 5) {
+	struct hfeasy_state *state = config_get_state();
+
+	if (recovery_counter > (state->cfg.recovery_count - 1)) {
 		recovery_mode();
 	}
 	recovery_counter = 0;

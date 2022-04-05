@@ -476,6 +476,11 @@ static const char *config_page_gpio =
 	"<TR><TD>Dimmer I2C CLK<TD><input %s type=\"text\" name=\"f8\" value=\"%d\">"\
 	"<TR><TD>Dimmer I2C DTA<TD><input %s type=\"text\" name=\"f9\" value=\"%d\">"\
 	"</table><input %s type=\"submit\" value=\"Apply\"></form>"\
+	"<br><hr><form action=\"/config_gpio\" method=\"GET\"><table>"\
+	"<tr><td>Button debounce time (10ms to 1000ms)<TD><input type=\"text\" name=\"dt\" value=\"%u\">"\
+	"<tr><td>Recovery timer (1000ms to 30000ms)<TD><input type=\"text\" name=\"rt\" value=\"%u\"><TD>Push button: press the button for this time to start recovery mode.<br>Toggle switch: read below."\
+	"<tr><td>Recovery # of toggles (min. 4)<TD><input type=\"text\" name=\"tc\" value=\"%u\"><TD>(toggle switch only) Toggle the switch this many times in the time window defined above to start recovery mode."\
+	"</table><input type=\"submit\" name=\"gpio2\" value=\"Apply\"></form>"\
 	"</body></html>";
 
 
@@ -534,6 +539,34 @@ static void USER_FUNC httpd_page_config_gpio(char *url, char *rsp)
 #endif
 
 		}
+
+	}
+	ret = httpd_arg_find(url, "gpio2", tmp);
+	if (ret > 0) {
+		ret = httpd_arg_find(url, "dt", tmp);
+		if (ret > 0) {
+			state.cfg.debounce_time = atoi(tmp);
+			if (state.cfg.debounce_time < 10)
+				state.cfg.debounce_time = 10;
+			else if (state.cfg.debounce_time > 1000)
+				state.cfg.debounce_time = 1000;
+		}
+		
+		ret = httpd_arg_find(url, "rt", tmp);
+		if (ret > 0) {
+			state.cfg.recovery_time = atoi(tmp);
+			if (state.cfg.recovery_time < 1000)
+				state.cfg.recovery_time = 1000;
+			else if (state.cfg.recovery_time > 30000)
+				state.cfg.recovery_time = 30000;
+		}
+		
+		ret = httpd_arg_find(url, "tc", tmp);
+		if (ret > 0) {
+			state.cfg.recovery_count = atoi(tmp);
+			if (state.cfg.recovery_count < 4)
+				state.cfg.recovery_count = 4;
+		}
 	}
 
 	sprintf(rsp, config_page_gpio, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
@@ -562,7 +595,10 @@ static void USER_FUNC httpd_page_config_gpio(char *url, char *rsp)
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[7],
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[8],
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[9],
-		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled"
+		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled",
+		state.cfg.debounce_time,
+		state.cfg.recovery_time,
+		state.cfg.recovery_count
 	);
 	log_printf("page_size=%d\r\n", strlen(rsp));
 }
@@ -966,6 +1002,7 @@ static void USER_FUNC config_load(uint8_t reset)
 		
 		state.cfg.recovery_time = 3000;
 		state.cfg.debounce_time = 50;
+		state.cfg.recovery_count = 6;
 		
 		hffile_userbin_zero();
 		config_save();

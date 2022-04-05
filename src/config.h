@@ -50,8 +50,9 @@ struct hfeasy_config {
 	int       device;
 	int       gpio_config[CONFIG_GPIO_CONFIG+1];
 	
-	int32_t   recovery_time;
-	int32_t   debounce_time;
+	uint32_t  recovery_time;
+	uint32_t  debounce_time;
+	uint8_t   recovery_count; 
 	
 	/* timers */
 	int       tz;
