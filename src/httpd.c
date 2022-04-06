@@ -34,6 +34,20 @@ static const char *hf_redirect_page	=
 	"</body></html>";
 
 
+static const char *auth_page =
+	"HTTP/1.0 401 Unauthorized\r\n"\
+	"Server: HTTPD\r\n"\
+	"Date: Thu, 01 Jan 1970 00:20:05 GMT\r\n"\
+	"WWW-Authenticate: Basic realm=\"USER LOGIN\"\r\n"\
+	"Pragma: no-cache\r\n"\
+	"Cache-Control: no-cache\r\n"\
+	"Content-Type: text/html\r\n"\
+	"Connection: close\r\n\r\n"\
+	"<HTML><HEAD><TITLE>401 Unauthorized</TITLE></HEAD>"\
+	"<BODY><H4>401 Unauthorized</H4>"\
+	"Authorization required."\
+	"</BODY></HTML>";
+
 
 struct httpd_page {
 	const char *url;
@@ -42,6 +56,86 @@ struct httpd_page {
 } httpd_pages[HTTPD_MAX_PAGES] = {
 	{ .url = NULL },
 };
+
+void b64dec(char *src, char *dst)
+{
+  int i = 0;
+  char tmp[4];
+	char *p = src;
+
+	i = 0;
+	while ((*p != '\0') || (i != 0)) {
+		
+		if ((*p == '\0') || (*p == '='))
+			tmp[i] = 0;
+		else if (*p >= 'a')
+			tmp[i] = *p - 'a' + 26;
+		else if (*p >= 'A')
+			tmp[i] = *p - 'A';
+		else
+			tmp[i] = *p - '0' + 52;
+
+		if (i == 3) {
+			*dst++ = (tmp[0] << 2) | ((tmp[1] & 0x30) >> 4);
+      *dst++ = ((tmp[1] & 0xf) << 4) | ((tmp[2] & 0x3c) >> 2);
+      *dst++ = ((tmp[2] & 0x3) << 6) | tmp[3];
+			i = 0;
+		} else {
+			i++;
+		}
+		
+		if (*p != '\0')
+			p++;
+	}
+	*dst = '\0';
+}
+
+void httpd_check_auth(char *buf, struct sockaddr_in *client)
+{
+	struct hfeasy_state* state = config_get_state();
+
+	char ans[100];
+	char *words[5] = {NULL};
+
+	static u32_t c;
+	char *p, *e;
+	char tmp[40];
+	
+	state->is_http_auth = 0;
+	
+	p = strstr(buf, "Authorization: Basic");
+	if (p == NULL)
+		return;
+
+/*
+	if (c == client->sin_addr.s_addr) {
+		state->is_http_auth = 1;
+		return;
+	}
+*/
+	p += 21;
+	e = strchr(p, '\r');
+	if (e != NULL)
+		*e = '\0';
+	e = strchr(p, '\n');
+	if (e != NULL)
+		*e = '\0';
+
+	b64dec(p, tmp);
+	
+	e = strchr(tmp, ':');
+	if (e == NULL)
+		return;
+	*e++ = '\0';
+	
+	strcpy(ans, "AT+WEBU");
+	if (at_cmd(ans, words, 3, 100)) {
+		if ((strcmp(tmp, words[1]) == 0) && (strcmp(e, words[2]) == 0)) {
+			//c = client->sin_addr.s_addr;
+			state->is_http_auth = 1;
+		}
+	}
+}
 
 static void USER_FUNC convert_ascii(char *str)
 {
@@ -163,7 +257,6 @@ static int USER_FUNC httpd_callback(char *url, char *rsp)
 	return -1;
 }
 
-#if 1
 static int http_get_alldata_len(char *data)
 {
 	char *p1 = NULL, *p2 = NULL;
@@ -175,9 +268,9 @@ static int http_get_alldata_len(char *data)
 
 	headLen = p1 - data + 4;
 	
-	p1 = strstr(data,"Content-Length");
+	p1 = strstr(data, "Content-Length");
 	if(p1 == NULL)
-		p1 = strstr(data,"Content-length");
+		p1 = strstr(data, "Content-length");
 	if(p1 == NULL)
 			return -1;
 
@@ -187,8 +280,9 @@ static int http_get_alldata_len(char *data)
 	return headLen + bodyLen;
 }
 
-static int https_recv_data(int fd, char *buffer, int len, int timeout_ms)
+static int https_recv_data(int fd, char *buffer, int len, int timeout_ms, struct sockaddr_in *s)
 {
+	struct hfeasy_state* state = config_get_state();
 	fd_set fdR;
 	struct timeval timeout;
 	int ret, tmpLen, recvLen = 0;
@@ -225,23 +319,10 @@ static int https_recv_data(int fd, char *buffer, int len, int timeout_ms)
 	log_printf("\r\n******* contentLen=%d recvLen=%d \r\n", contenLen, recvLen);
 	buffer[recvLen++] = '\0';
 	
-	char *sp1, *sp2;
-	sp1 = strchr(buffer, ' ');
-	if (sp1 == NULL) {
-		log_printf("sp1 not found!\r\n");
-		return -1;
-	}
-	sp2 = strchr(sp1+1, ' ');
-	if (sp2 == NULL) {
-		log_printf("sp2 not found!\r\n");
-		return -1;
-	}
-	*sp2 = '\0';
 	
 	//ignore favicon.ico
 	//if((recvLen > strlen("GET /favicon.ico")) && (memcmp(buffer, "GET /favicon.ico", strlen("GET /favicon.ico"))==0))
 	//	return 0;
-
 	//u_printf("buffer='%s' size=%d\r\n", buffer, strlen(buffer));
 
 	if (recvLen > 5) {
@@ -249,7 +330,39 @@ static int https_recv_data(int fd, char *buffer, int len, int timeout_ms)
 		char buf[201], *a;
 		char *r = buffer;
 		char url[201];
+		char *sp1, *sp2;
 
+		/* basic auth */
+		if (state->cfg.httpd_settings & HTTPD_AUTH) {
+			httpd_check_auth(buffer, s);
+			if (!state->is_http_auth) {
+				write(fd, auth_page, strlen(auth_page));
+				return 0;
+			}
+		}
+
+		sp1 = strchr(buffer, ' ');
+		if (sp1 == NULL) {
+			return -1;
+		}
+		sp2 = strchr(sp1+1, ' ');
+		if (sp2 == NULL) {
+			return -1;
+		}
+		
+		if (memcmp(buffer, "POST", 4) == 0) {
+			char *dt = strstr(buffer, "\r\n\r\n");
+			if (dt != NULL) {
+				dt += 4;
+				*sp2++ = '?';
+				strcpy(sp2, dt);
+			} else {
+				*sp2 = '\0';
+			}
+		} else {
+			*sp2 = '\0';
+		}		
+		
 		strncpy(url, sp1+1, 200);
 		
 		log_printf("url='%s' size=%d\r\n", url, strlen(url));
@@ -320,7 +433,7 @@ static void hf_http_server(void)
 		remotefd = accept(listenfd, (struct sockaddr *)&remote_addr, (socklen_t *)(&len));
 		if(remotefd >= 0) {
 			memset(https_recv_buf, 0, HTTPD_RECV_BUF_LEN);
-			https_recv_data(remotefd, https_recv_buf, HTTPD_RECV_BUF_LEN-1, HTTPD_RECV_TIMEOUT);
+			https_recv_data(remotefd, https_recv_buf, HTTPD_RECV_BUF_LEN-1, HTTPD_RECV_TIMEOUT, &remote_addr);
 		}
 
 		close(remotefd);
