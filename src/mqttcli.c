@@ -118,7 +118,7 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 	if (state->func_state & FUNC_DIMMER) {
 		mqttcli_get_topic(topic, "cmnd", "dimmer");
 		if (strcmp(topic_name, topic) == 0) {
-			if (state->cfg.led1 & LED_CONFIG_MQTT)
+			if (state->cfg.led1 == LED_CONFIG_MQTT)
 				led_ctrl("n1f"); /* got data = 1 blink */
 
 			int lvl = atoi(msg);
@@ -126,7 +126,7 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 		}
 		mqttcli_get_topic(topic, "cmnd", "POWER");
 		if (strcmp(topic_name, topic) == 0) {
-			if (state->cfg.led1 & LED_CONFIG_MQTT)
+			if (state->cfg.led1 == LED_CONFIG_MQTT)
 				led_ctrl("n1f"); /* got data = 1 blink */
 			
 			/* set dimmer on/off */
@@ -142,7 +142,7 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 	if (state->func_state & FUNC_RELAY) {
 		mqttcli_get_topic(topic, "cmnd", "POWER");
 		if (strcmp(topic_name, topic) == 0) {
-			if (state->cfg.led1 & LED_CONFIG_MQTT)
+			if (state->cfg.led1 == LED_CONFIG_MQTT)
 				led_ctrl("n1f"); /* got data = 1 blink */
 
 			if (strcmp(cfg->mqtt_on_value, msg) == 0) {
@@ -376,12 +376,12 @@ static void USER_FUNC mqttcli_thread(void* client)
 					if (state->mqtt_ready == 0) {
 						log_printf("mqtt_disconnected");
 						/* disconnect */
-						if (state->cfg.led1 & LED_CONFIG_MQTT)
+						if (state->cfg.led1 == LED_CONFIG_MQTT)
 							led_ctrl("n1f1n1fsr");	/* disconnected = 2 blinks, 1sec interval */
 						STATE = MQTTCLI_STATE_DISCONNECT;
 					} else if (++state->mqtt_ready == MQTT_PING_COUNT) {
 						/* mqtt ping */
-						if (state->cfg.led1 & LED_CONFIG_MQTT)
+						if (state->cfg.led1 == LED_CONFIG_MQTT)
 							led_ctrl("n1f1n1f1n1f"); /* ping = 3 blinks */
 						state->mqtt_ready = 1;
 						hfeasy_mqtt_ping(&mqttcli);
@@ -441,7 +441,7 @@ void USER_FUNC mqttcli_publish(char *value, char *sufix)
 	if (state->mqtt_ready) {
 		mqttcli_get_topic(topic, "stat", sufix);
 		hfeasy_mqtt_publish(&mqttcli, topic, value, strlen(value), flags);
-		if (state->cfg.led1 & LED_CONFIG_MQTT)
+		if (state->cfg.led1 == LED_CONFIG_MQTT)
 			led_ctrl("n1f1n1f"); /* publish = 2 blinks */
 	}
 	hfmem_free(topic);

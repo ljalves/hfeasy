@@ -324,7 +324,7 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 		if (dimmer_val != -1)
 			dimmer_set((uint8_t) dimmer_val, RELAY_SRC_HTTP);
 
-		if (state->cfg.led1 & LED_CONFIG_HTTP)
+		if (state->cfg.led1 == LED_CONFIG_HTTP)
 			led_ctrl("n1f"); /* got data = 1 blink */
 
 		sprintf(rsp, "{ \"set\": \"%d\", \"relay_status\": \"%d\", \"level\": \"%d\" }", dimmer_val, state->relay_state, state->dimmer_level);
@@ -342,7 +342,7 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 		else
 			relay_set(0, RELAY_SRC_HTTP);
 
-		if (state->cfg.led1 & LED_CONFIG_HTTP)
+		if (state->cfg.led1 == LED_CONFIG_HTTP)
 			led_ctrl("n1f"); /* got data = 1 blink */
 		
 		sprintf(rsp, "{ \"set\": \"%s\", \"relay_status\": \"%d\" }", val, state->relay_state);
