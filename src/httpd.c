@@ -57,7 +57,7 @@ struct httpd_page {
 	{ .url = NULL },
 };
 
-void b64dec(char *src, char *dst)
+static void b64dec(char *src, char *dst)
 {
   int i = 0;
   char tmp[4];
@@ -90,7 +90,7 @@ void b64dec(char *src, char *dst)
 	*dst = '\0';
 }
 
-void httpd_check_auth(char *buf, struct sockaddr_in *client)
+static int httpd_check_auth(char *buf, struct sockaddr_in *client)
 {
 	struct hfeasy_state* state = config_get_state();
 
@@ -100,12 +100,12 @@ void httpd_check_auth(char *buf, struct sockaddr_in *client)
 	static u32_t c;
 	char *p, *e;
 	char tmp[40];
+	int ret = 0;
 	
-	state->is_http_auth = 0;
 	
 	p = strstr(buf, "Authorization: Basic");
 	if (p == NULL)
-		return;
+		return ret;
 
 /*
 	if (c == client->sin_addr.s_addr) {
@@ -125,16 +125,17 @@ void httpd_check_auth(char *buf, struct sockaddr_in *client)
 	
 	e = strchr(tmp, ':');
 	if (e == NULL)
-		return;
+		return ret;
 	*e++ = '\0';
 	
 	strcpy(ans, "AT+WEBU");
 	if (at_cmd(ans, words, 3, 100)) {
 		if ((strcmp(tmp, words[1]) == 0) && (strcmp(e, words[2]) == 0)) {
 			//c = client->sin_addr.s_addr;
-			state->is_http_auth = 1;
+			ret = 1;
 		}
 	}
+	return ret;
 }
 
 static void USER_FUNC convert_ascii(char *str)
@@ -334,8 +335,7 @@ static int https_recv_data(int fd, char *buffer, int len, int timeout_ms, struct
 
 		/* basic auth */
 		if (state->cfg.httpd_settings & HTTPD_AUTH) {
-			httpd_check_auth(buffer, s);
-			if (!state->is_http_auth) {
+			if (! httpd_check_auth(buffer, s)) {
 				write(fd, auth_page, strlen(auth_page));
 				return 0;
 			}
