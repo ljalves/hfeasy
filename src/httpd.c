@@ -316,7 +316,7 @@ static int https_recv_data(int fd, char *buffer, int len, int timeout_ms, struct
 		}
 	}
 
-	log_printf("\r\n******* contentLen=%d recvLen=%d \r\n", contenLen, recvLen);
+	//log_printf("\r\n******* contentLen=%d recvLen=%d \r\n", contenLen, recvLen);
 	buffer[recvLen++] = '\0';
 	
 	
@@ -365,7 +365,7 @@ static int https_recv_data(int fd, char *buffer, int len, int timeout_ms, struct
 		
 		strncpy(url, sp1+1, 200);
 		
-		log_printf("url='%s' size=%d\r\n", url, strlen(url));
+		//log_printf("url='%s' size=%d\r\n", url, strlen(url));
 		
 		while (p->url != NULL) {
 			int s;
@@ -444,11 +444,6 @@ static void hf_http_server(void)
 	//hfthread_destroy(NULL);
 	return;
 }
-
-#endif
-
-
-
 
 
 
