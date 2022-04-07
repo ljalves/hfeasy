@@ -60,11 +60,11 @@ const int gpio_default_config[DEVICE_END - 1][CONFIG_GPIO_CONFIG + 1]	=
 
 #elif defined(__LPXX30__)
 
-/* wifi_led, relay, but_push, but_togg, but_up, but_dn, buzz, i2c_ck, i2c_dt, inverted_outputs */
-const int gpio_default_config[DEVICE_END - 1][11]	= 
+/* led1, led2, relay, but_push, but_togg, but_up, but_dn, buzz, i2c_ck, i2c_dt, inverted_outputs */
+const int gpio_default_config[DEVICE_END - 1][CONFIG_GPIO_CONFIG + 1]	= 
 {
 	/* plug */
-	{	29, 30, 28, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB130, GPIO_INV_LED},
+	{	29, 0, 30, 28, 0, 0, 0, 0, 0, 0, HFM_TYPE_LPB130, GPIO_INV_LED1},
 	
 };
 
