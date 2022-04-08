@@ -188,9 +188,8 @@ static const char *main_page =
 	"<button id=\"btn_off\">OFF</button>"\
 	"<hr>"\
 	"<table><tr>"\
-	"<tr><td><a href=\"config\">Module</a>"\
+	"<tr><td><a href=\"config\">Device</a>"\
 	"<tr><td><a href=\"config_mqtt\">MQTT</a>"\
-	"<tr><td><a href=\"config_device\">Device</a>"\
 	"<tr><td><a href=\"config_gpio\">GPIO</a>"\
 	"<tr><td><a href=\"config_wifi\">WiFi</a>"\
 	"<tr><td><a href=\"config_network\">Network</a>"\
@@ -225,7 +224,21 @@ static const char *config_page =
 	"<h1>HFeasy config page</h1><hr>"\
 	"<a href=\"/\">Go back</a>"\
 	"<form action=\"/config\" method=\"GET\"><table>"\
-	"<th colspan=\"2\">Module"\
+	"<th colspan=\"2\">Device"\
+	"<TR><TD>Type<TD><select name=\"device\">"\
+	"<option %s value=0>custom</option>"
+#if defined(__LPXX00__)
+	"<option %s value=1>module</option>"\
+	"<option %s value=2>plug</option>"\
+	"<option %s value=3>us_dimmer</option>"\
+	"<option %s value=4>us_wall_sw</option>"\
+	"<option %s value=5>g-homa</option>"
+	"<option %s value=6>wiwo-s20</option>"
+	"<option %s value=7>sws-a1</option>"
+#elif defined(__LPXX30__)
+	"<option %s value=1>plug</option>"
+#endif
+	"</select>"\
 	"<tr><td>Friendly name<td><input type=\"text\" name=\"fn\" value=\"%s\">"\
 	"<tr><td>Module name (id)<td><input type=\"text\" name=\"mn\" value=\"%s\">"\
 	"<tr><td>HTTP auth<td><input type=\"checkbox\" name=\"auth\" value=\"1\" %s>"\
@@ -242,6 +255,7 @@ static const char *config_page =
 	"</select>"\
 	"<tr><td>Power on state<td><input type=\"text\" name=\"pwron\" value=\"%d\"> (0=off, >0=on; dimmer: level=0~128)"\
 	"</table><input type=\"submit\" value=\"Apply\"></form>"\
+	"<br>Note: After changing device and/or after setting custom gpio's, save to flash and reboot"\
 	"</body></html>";
 
 
@@ -249,6 +263,35 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 {
 	char tmp[50];
 	int ret;
+	
+	ret = httpd_arg_find(url, "device", tmp);
+	if (ret > 0) {
+		state.cfg.device = atoi(tmp);
+		if (state.cfg.device >= DEVICE_END)
+			state.cfg.device = DEVICE_CUSTOM;
+	
+#ifdef __LPXX00__1
+		relay_deinit();
+		led_deinit();
+		dimmer_deinit();
+		buzzer_deinit();
+		gpio_deinit();
+#endif
+
+		/* apply device default gpio config */
+		if (state.cfg.device > DEVICE_CUSTOM) {
+			memcpy(state.cfg.gpio_config, gpio_default_config[state.cfg.device - 1], sizeof(state.cfg.gpio_config));
+		}
+
+#ifdef __LPXX00__1
+		hfeasy_gpio_init();
+		relay_init();
+		led_init();
+		dimmer_init();
+		buzzer_init();
+#endif
+
+	}
 	
 	ret = httpd_arg_find(url, "fn", tmp);
 	if (ret > 0) {
@@ -282,7 +325,17 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 		state.cfg.pwron_state = atoi(tmp);
 	}
 	
-	sprintf(rsp, config_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
+	snprintf(rsp, HTTPD_MAX_PAGE_SIZE, config_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
+		state.cfg.device == 0 ? "selected" : "",
+		state.cfg.device == 1 ? "selected" : "",
+#ifdef __LPXX00__
+		state.cfg.device == 2 ? "selected" : "",
+		state.cfg.device == 3 ? "selected" : "",
+		state.cfg.device == 4 ? "selected" : "",
+		state.cfg.device == 5 ? "selected" : "",
+		state.cfg.device == 6 ? "selected" : "",
+		state.cfg.device == 7 ? "selected" : "",
+#endif
 		state.cfg.friendly_name, state.module_name,
 		state.cfg.httpd_settings & HTTPD_AUTH ? "checked" : "",
 		state.cfg.httpd_settings & HTTPD_CORS ? "checked" : "",
@@ -303,7 +356,7 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 		led_ctrl("f");
 	}	
 	
-	log_printf("page_size=%d\r\n", strlen(rsp));
+	//log_printf("page_size=%d\r\n", strlen(rsp));
 }
 
 
@@ -376,77 +429,6 @@ static void USER_FUNC httpd_page_config_mqtt(char *url, char *rsp)
 					state.cfg.mqtt_on_value, state.cfg.mqtt_off_value);
 
 	u_printf("page_size=%d\r\n", strlen(rsp));
-}
-
-static const char *config_page_device =
-	"<!DOCTYPE html><html><head><title>HFeasy v%d.%d</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"\
-	"<h1>HFeasy device selection</h1><hr>"\
-	"<a href=\"/\">Go back</a>"\
-	"<form action=\"/config_device\" method=\"GET\"><table>"\
-	"<TR><TD>Device<TD><select name=\"device\">"\
-	"<option %s value=0>custom</option>"
-#if defined(__LPXX00__)
-	"<option %s value=1>module</option>"\
-	"<option %s value=2>plug</option>"\
-	"<option %s value=3>us_dimmer</option>"\
-	"<option %s value=4>us_wall_sw</option>"\
-	"<option %s value=5>g-homa</option>"
-	"<option %s value=6>wiwo-s20</option>"
-	"<option %s value=7>sws-a1</option>"
-#elif defined(__LPXX30__)
-	"<option %s value=1>plug</option>"
-#endif
-	"</select>"\
-	"<TD><input type=\"submit\" value=\"Change device\">"\
-	"</table></form>"
-	"<br>Note: After changing device and/or after setting custom gpio's, go back, save to flash and reboot";
-
-static void USER_FUNC httpd_page_config_device(char *url, char *rsp)
-{
-	char tmp[50];
-	int ret;
-	
-	ret = httpd_arg_find(url, "device", tmp);
-	if (ret > 0) {
-		state.cfg.device = atoi(tmp);
-		if (state.cfg.device >= DEVICE_END)
-			state.cfg.device = DEVICE_CUSTOM;
-	
-#ifdef __LPXX00__1
-		relay_deinit();
-		led_deinit();
-		dimmer_deinit();
-		buzzer_deinit();
-		gpio_deinit();
-#endif
-
-		/* apply device default gpio config */
-		if (state.cfg.device > DEVICE_CUSTOM) {
-			memcpy(state.cfg.gpio_config, gpio_default_config[state.cfg.device - 1], sizeof(state.cfg.gpio_config));
-		}
-
-#ifdef __LPXX00__1
-		hfeasy_gpio_init();
-		relay_init();
-		led_init();
-		dimmer_init();
-		buzzer_init();
-#endif
-
-	}
-
-	sprintf(rsp, config_page_device, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR
-		,state.cfg.device == 0 ? "selected" : ""
-		,state.cfg.device == 1 ? "selected" : ""
-#ifdef __LPXX00__
-		,state.cfg.device == 2 ? "selected" : ""
-		,state.cfg.device == 3 ? "selected" : ""
-		,state.cfg.device == 4 ? "selected" : ""
-		,state.cfg.device == 5 ? "selected" : ""
-		,state.cfg.device == 6 ? "selected" : ""
-		,state.cfg.device == 7 ? "selected" : ""
-#endif
-	);
 }
 
 static const char *config_page_gpio =
@@ -1025,7 +1007,6 @@ void USER_FUNC config_init(void)
 	httpd_add_page("/", httpd_page_main, NULL);
 	httpd_add_page("/config", httpd_page_config, NULL);
 	httpd_add_page("/config_mqtt", httpd_page_config_mqtt, NULL);
-	httpd_add_page("/config_device", httpd_page_config_device, NULL);
 	httpd_add_page("/config_gpio", httpd_page_config_gpio, NULL);
 	httpd_add_page("/status", httpd_page_status, NULL);
 	httpd_add_page("/log", httpd_page_log, NULL);
