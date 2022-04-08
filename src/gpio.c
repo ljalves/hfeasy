@@ -332,14 +332,15 @@ static void USER_FUNC switch_state_page(char *url, char *rsp)
 	
 	if (state->func_state & FUNC_RELAY) {
 		ret = httpd_arg_find(url, "sw", val);
-		if (ret != 1)
+		if (ret != 1) { 
 			strcpy(val, "none");
-
-		/* set relay */
-		if (atoi(val) > 0)
-			relay_set(1, RELAY_SRC_HTTP);
-		else
-			relay_set(0, RELAY_SRC_HTTP);
+		} else {
+			/* set relay */
+			if (atoi(val) > 0)
+				relay_set(1, RELAY_SRC_HTTP);
+			else
+				relay_set(0, RELAY_SRC_HTTP);
+		}
 
 		leds_ctrl_if(LED_CONFIG_HTTP, "n1f", NULL); /* got data = 1 blink */
 		
