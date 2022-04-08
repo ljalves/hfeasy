@@ -243,7 +243,17 @@ static const char *config_page =
 	"<tr><td>Module name (id)<td><input type=\"text\" name=\"mn\" value=\"%s\">"\
 	"<tr><td>HTTP auth<td><input type=\"checkbox\" name=\"auth\" value=\"1\" %s>"\
 	"<tr><td>Enable CORS:*<td><input type=\"checkbox\" name=\"cors\" value=\"1\" %s>"\
-	"<tr><td>Wifi LED (if supported)<td><select name=\"led\">"\
+	"<tr><td>LED 1 function<td><select name=\"led1\">"\
+	"<option value=\"0\"%s>Off</option>"\
+	"<option value=\"1\"%s>MQTT</option>"\
+	"<option value=\"2\"%s>HTTP</option>"\
+	"<option value=\"3\"%s>MQTT+HTTP</option>"\
+	"<option value=\"4\"%s>Relay</option>"\
+	"<option value=\"5\"%s>MQTT topic</option>"\
+	"<option value=\"6\"%s>Find</option>"\
+	"<option value=\"7\"%s>Wifi</option>"\
+	"</select>"\
+	"<tr><td>LED 2 function<td><select name=\"led2\">"\
 	"<option value=\"0\"%s>Off</option>"\
 	"<option value=\"1\"%s>MQTT</option>"\
 	"<option value=\"2\"%s>HTTP</option>"\
@@ -313,11 +323,18 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 			strcpy(state.module_name, tmp);
 	}
 
-	ret = httpd_arg_find(url, "led", tmp);
+	ret = httpd_arg_find(url, "led1", tmp);
 	if (ret > 0) {
-		state.cfg.led1 = atoi(tmp);
-		if (state.cfg.led1 >= LED_CONFIG_END)
-			state.cfg.led1 = 0;
+		state.cfg.led[0] = atoi(tmp);
+		if (state.cfg.led[0] >= LED_CONFIG_END)
+			state.cfg.led[0] = 0;
+	}
+	
+	ret = httpd_arg_find(url, "led2", tmp);
+	if (ret > 0) {
+		state.cfg.led[1] = atoi(tmp);
+		if (state.cfg.led[1] >= LED_CONFIG_END)
+			state.cfg.led[1] = 0;
 	}
 	
 	ret = httpd_arg_find(url, "pwron", tmp);
@@ -339,23 +356,27 @@ static void USER_FUNC httpd_page_config(char *url, char *rsp)
 		state.cfg.friendly_name, state.module_name,
 		state.cfg.httpd_settings & HTTPD_AUTH ? "checked" : "",
 		state.cfg.httpd_settings & HTTPD_CORS ? "checked" : "",
-		state.cfg.led1 == 0 ? "selected" : "",
-		state.cfg.led1 == 1 ? "selected" : "",
-		state.cfg.led1 == 2 ? "selected" : "",
-		state.cfg.led1 == 3 ? "selected" : "",
-		state.cfg.led1 == 4 ? "selected" : "",
-		state.cfg.led1 == 5 ? "selected" : "",
-		state.cfg.led1 == 6 ? "selected" : "",
-		state.cfg.led1 == 7 ? "selected" : "",
+		state.cfg.led[0] == 0 ? "selected" : "",
+		state.cfg.led[0] == 1 ? "selected" : "",
+		state.cfg.led[0] == 2 ? "selected" : "",
+		state.cfg.led[0] == 3 ? "selected" : "",
+		state.cfg.led[0] == 4 ? "selected" : "",
+		state.cfg.led[0] == 5 ? "selected" : "",
+		state.cfg.led[0] == 6 ? "selected" : "",
+		state.cfg.led[0] == 7 ? "selected" : "",
+		state.cfg.led[1] == 0 ? "selected" : "",
+		state.cfg.led[1] == 1 ? "selected" : "",
+		state.cfg.led[1] == 2 ? "selected" : "",
+		state.cfg.led[1] == 3 ? "selected" : "",
+		state.cfg.led[1] == 4 ? "selected" : "",
+		state.cfg.led[1] == 5 ? "selected" : "",
+		state.cfg.led[1] == 6 ? "selected" : "",
+		state.cfg.led[1] == 7 ? "selected" : "",
 		(int)state.cfg.pwron_state
 	);
 
-	if (state.cfg.led1 == LED_CONFIG_FIND) {
-		led_ctrl("n5f5n2f2n2f2n5f5n1f1r"); /* "find" blink pattern */
-	} else {
-		led_ctrl("f");
-	}	
-	
+	leds_ctrl_if(LED_CONFIG_FIND, "n5f5n2f2n2f2n5f5n1f1r", "f"); /* "find" blink pattern */
+
 	//log_printf("page_size=%d\r\n", strlen(rsp));
 }
 
@@ -565,7 +586,7 @@ static void USER_FUNC httpd_page_config_gpio(char *url, char *rsp)
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[CONFIG_GPIO_CONFIG] & GPIO_INV_LED1 ? "checked": "",
 		
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[1],
-		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[CONFIG_GPIO_CONFIG] & GPIO_INV_LED1 ? "checked": "",
+		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[CONFIG_GPIO_CONFIG] & GPIO_INV_LED2 ? "checked": "",
 		
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[2],
 		state.cfg.device == DEVICE_CUSTOM ? "" : "disabled", state.cfg.gpio_config[CONFIG_GPIO_CONFIG] & GPIO_INV_RELAY ? "checked": "",
@@ -815,22 +836,20 @@ static int sys_event_callback(uint32_t event_id, void *param)
 	switch(event_id) {
 		case HFE_WIFI_STA_CONNECTED:
 			log_printf("wifi sta connected");
-			led_ctrl("n51f51r");
+			leds_ctrl_if(LED_CONFIG_WIFI, "n51f51r", NULL);
 		
 			/* check if static ip */
 			get_sta_settings(tmp);
 			if (strcmp(tmp, "static") == 0) {
 				state.has_ip = 1;
-				if (state.cfg.led1 == LED_CONFIG_WIFI)
-					led_ctrl("n");
-
+				leds_ctrl_if(LED_CONFIG_WIFI, "n", NULL);
 			}		
 			break;
 			
 		case HFE_WIFI_STA_DISCONNECTED:
 			state.has_ip = 0;
 			log_printf("wifi sta disconnected!");
-			led_ctrl("n2f2r");
+			leds_ctrl_if(LED_CONFIG_WIFI, "n2f2r", NULL);
 			break;
 			
 		case HFE_DHCP_OK:
@@ -839,10 +858,7 @@ static int sys_event_callback(uint32_t event_id, void *param)
 				p_ip = (uint32_t*) param;
 				log_printf("network: dhcp ok got ip %s", inet_ntoa(*p_ip));
 				state.has_ip = 1;
-				if (state.cfg.led1 == LED_CONFIG_WIFI)
-					led_ctrl("n");
-				else
-					led_ctrl("f");
+				leds_ctrl_if(LED_CONFIG_WIFI, "n", NULL);
 			}
 			break;
 		

@@ -32,6 +32,7 @@ enum {
 
 void USER_FUNC led_init(void);
 void USER_FUNC led_deinit(void);
-void USER_FUNC led_ctrl(char *a);
+void USER_FUNC led_ctrl(uint8_t led, char *a);
+void USER_FUNC leds_ctrl_if(int c, char *a_true, char *a_false);
 
 #endif

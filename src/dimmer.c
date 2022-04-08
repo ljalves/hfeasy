@@ -68,13 +68,11 @@ void USER_FUNC dimmer_set(uint8_t lvl, uint8_t source)
 	}
 	
 	if (state->relay_state == 0) {
-		if (state->cfg.led1 == LED_CONFIG_RELAY)
-			led_ctrl("f");
+		leds_ctrl_if(LED_CONFIG_RELAY, "f", NULL);
 
 		gpio_i2c_send(I2C_ADDR, 0);
 	} else {
-		if (state->cfg.led1 == LED_CONFIG_RELAY)
-			led_ctrl("n");
+		leds_ctrl_if(LED_CONFIG_RELAY, "n", NULL);
 
 		/* top limit */
 		if (lvl > DIMMER_MAX_LEVEL)

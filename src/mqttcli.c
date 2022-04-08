@@ -118,16 +118,14 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 	if (state->func_state & FUNC_DIMMER) {
 		mqttcli_get_topic(topic, "cmnd", "dimmer");
 		if (strcmp(topic_name, topic) == 0) {
-			if (state->cfg.led1 == LED_CONFIG_MQTT)
-				led_ctrl("n1f"); /* got data = 1 blink */
+			leds_ctrl_if(LED_CONFIG_MQTT, "n1f", NULL); /* got data = 1 blink */
 
 			int lvl = atoi(msg);
 			dimmer_set(lvl, RELAY_SRC_MQTT);
 		}
 		mqttcli_get_topic(topic, "cmnd", "POWER");
 		if (strcmp(topic_name, topic) == 0) {
-			if (state->cfg.led1 == LED_CONFIG_MQTT)
-				led_ctrl("n1f"); /* got data = 1 blink */
+			leds_ctrl_if(LED_CONFIG_MQTT, "n1f", NULL); /* got data = 1 blink */
 			
 			/* set dimmer on/off */
 			if (strcmp(cfg->mqtt_on_value, msg) == 0) {
@@ -142,8 +140,7 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 	if (state->func_state & FUNC_RELAY) {
 		mqttcli_get_topic(topic, "cmnd", "POWER");
 		if (strcmp(topic_name, topic) == 0) {
-			if (state->cfg.led1 == LED_CONFIG_MQTT)
-				led_ctrl("n1f"); /* got data = 1 blink */
+			leds_ctrl_if(LED_CONFIG_MQTT, "n1f", NULL); /* got data = 1 blink */
 
 			if (strcmp(cfg->mqtt_on_value, msg) == 0) {
 				relay_set(RELAY_ON, RELAY_SRC_MQTT);
@@ -153,15 +150,26 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
 		}
 	}
 	
-	/* led */
+	/* leds */
 	if ((state->func_state & FUNC_LED1) && 
-			(state->cfg.led1 == LED_CONFIG_TOPIC)) {
-		mqttcli_get_topic(topic, "cmnd", "led");
+			(state->cfg.led[0] == LED_CONFIG_TOPIC)) {
+		mqttcli_get_topic(topic, "cmnd", "led1");
 		if (strcmp(topic_name, topic) == 0) {
 			if (strcmp(cfg->mqtt_on_value, msg) == 0) {
-				led_ctrl("n");
+				led_ctrl(0, "n");
 			} else if (strcmp(cfg->mqtt_off_value, msg) == 0) {
-				led_ctrl("f");
+				led_ctrl(0, "f");
+			}
+		}
+	}
+	if ((state->func_state & FUNC_LED2) && 
+			(state->cfg.led[1] == LED_CONFIG_TOPIC)) {
+		mqttcli_get_topic(topic, "cmnd", "led2");
+		if (strcmp(topic_name, topic) == 0) {
+			if (strcmp(cfg->mqtt_on_value, msg) == 0) {
+				led_ctrl(1, "n");
+			} else if (strcmp(cfg->mqtt_off_value, msg) == 0) {
+				led_ctrl(1, "f");
 			}
 		}
 	}
@@ -376,13 +384,11 @@ static void USER_FUNC mqttcli_thread(void* client)
 					if (state->mqtt_ready == 0) {
 						log_printf("mqtt_disconnected");
 						/* disconnect */
-						if (state->cfg.led1 == LED_CONFIG_MQTT)
-							led_ctrl("n1f1n1fsr");	/* disconnected = 2 blinks, 1sec interval */
+						leds_ctrl_if(LED_CONFIG_MQTT, "n1f1n1fsr", NULL); /* disconnected = 2 blinks, 1sec interval */
 						STATE = MQTTCLI_STATE_DISCONNECT;
 					} else if (++state->mqtt_ready == MQTT_PING_COUNT) {
 						/* mqtt ping */
-						if (state->cfg.led1 == LED_CONFIG_MQTT)
-							led_ctrl("n1f1n1f1n1f"); /* ping = 3 blinks */
+						leds_ctrl_if(LED_CONFIG_MQTT, "n1f1n1f1n1f", NULL); /* ping = 3 blinks */
 						state->mqtt_ready = 1;
 						hfeasy_mqtt_ping(&mqttcli);
 					}
@@ -441,8 +447,7 @@ void USER_FUNC mqttcli_publish(char *value, char *sufix)
 	if (state->mqtt_ready) {
 		mqttcli_get_topic(topic, "stat", sufix);
 		hfeasy_mqtt_publish(&mqttcli, topic, value, strlen(value), flags);
-		if (state->cfg.led1 == LED_CONFIG_MQTT)
-			led_ctrl("n1f1n1f"); /* publish = 2 blinks */
+		leds_ctrl_if(LED_CONFIG_MQTT, "n1f1n1f", NULL); /* publish = 2 blinks */
 	}
 	hfmem_free(topic);
 }

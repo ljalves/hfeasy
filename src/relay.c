@@ -50,13 +50,11 @@ void USER_FUNC relay_set(uint8_t action, uint8_t source)
 
 	/* set gpio */
 	if (state->relay_state) {
-		if (state->cfg.led1 == LED_CONFIG_RELAY)
-			led_ctrl("n");
+		leds_ctrl_if(LED_CONFIG_RELAY, "n", NULL);
 		
 		set_relay_pin(1);
 	} else {
-		if (state->cfg.led1 == LED_CONFIG_RELAY)
-			led_ctrl("f");
+		leds_ctrl_if(LED_CONFIG_RELAY, "f", NULL);
 
 		set_relay_pin(0);
 	}

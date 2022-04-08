@@ -44,7 +44,7 @@ struct hfeasy_config {
 	/* module */
 	char      friendly_name[50];
 	char      httpd_settings;
-	uint8_t   led1, led2;
+	uint8_t   led[2];
 
 	/* gpio */
 	int       device;
