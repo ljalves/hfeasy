@@ -88,6 +88,7 @@ static void USER_FUNC time2sec(time_t *seconds, int *time)
 static const char *ntp_config_page =
 	"<!DOCTYPE html><html><head><title>HFeasy v%d.%d</title><link rel=\"stylesheet\" href=\"/styles.css\"></head><body onload=\"check()\">"\
 	"<h1>NTP client</h1><hr>"\
+	"<a href=\"/\">Go back</a>"\
 	"<form action=\"ntp\" method=\"GET\">"\
 	"<table><tr><th colspan=\"2\">Time settings"\
 	"<tr><td>System time<td>%s"\
@@ -298,7 +299,8 @@ static time_t parse_crontab(void)
 
 static const char *timer_page =
 	"<!DOCTYPE html><html><head><title>HFeasy v%d.%d</title><link rel=\"stylesheet\" href=\"/styles.css\"></head><body>"\
-	"<h1>HFeasy timer</h1><hr>"\
+	"<h1>Timers</h1><hr>"\
+	"<a href=\"/\">Go back</a>"\
 	"<br><h2>Countdown timer</h2><br>"\
 	"<form action=\"timer\" method=\"GET\">"\
 	"Turn OFF (0 to disable): <input type=\"text\" name=\"cd02\" value=\"%d\" maxlength=\"4\" size=\"4\">h"\
@@ -314,6 +316,13 @@ static const char *timer_page =
 	"System time: %s<br>Next action:%s<br>"\
 	"<textarea rows=\"4\" cols=\"60\" name=\"cron\">%s</textarea>"\
 	"<br><input type=\"submit\" value=\"Apply\"></form>"\
+	"<br><p>Syntax: seconds minutes hours day month day_of_week :action<br>"\
+	"Supported actions: on off tog on,brightness<br>"\
+	"Examples:<br>"\
+	"0 0 20 * * * :on -- turn on everyday at 20h00<br>"
+	"0 30 7 * * 1-5 :on -- turn off from Mon to Fri at 7h30<br>"
+	"* */5 * * * * :tog -- toggle every 5 minutes<br>"
+	"0 0 19 * * * :on,40 -- turn on dimmer with 40 brightness at 19h00</p>"
 	"</body></html>";
 
 
@@ -321,6 +330,7 @@ static void USER_FUNC httpd_page_timer(char *url, char *rsp)
 {
 	struct hfeasy_state *state = config_get_state();
 	struct hfeasy_config *cfg = &state->cfg;
+	struct hfeasy_timer *tmr = state->timers;
 	char tmp[100], var[10], now_s[40], next_s[40];
 	int ret;
 
@@ -368,15 +378,28 @@ static void USER_FUNC httpd_page_timer(char *url, char *rsp)
 
 	
 	ret = httpd_arg_find(url, "cron", tmp);
-	if (ret == 1)
+	if (ret == 1) {
 		strncpy(state->cfg.cron, tmp, 99);
-
-	next = parse_crontab();
+		next = parse_crontab();
+	} else {
+		next = 0;
+		while (tmr != NULL) {
+			if (tmr->flags != TIMER_DISABLED) {
+				time_t n = cron_next(&tmr->cron, now);
+				if (next == 0) {
+					next = n;
+				} else if (n < next) {
+					next = n;
+				}
+			}
+			tmr = tmr->next;
+		}
+	}
 	
 	strcpy(now_s, ctime(&now));
 	strcpy(next_s, ctime(&next));
 	
-	snprintf(rsp, 1200, timer_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
+	snprintf(rsp, HTTPD_MAX_PAGE_SIZE, timer_page, HFEASY_VERSION_MAJOR, HFEASY_VERSION_MINOR,
 			cd[0][2], cd[0][1], cd[0][0], cd[1][2], cd[1][1], cd[1][0], now_s, next_s, state->cfg.cron);
 }	
 
