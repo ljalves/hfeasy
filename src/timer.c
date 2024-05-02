@@ -521,7 +521,7 @@ void USER_FUNC timer_init(void)
 					"timer", 512, state, HFTHREAD_PRIORITIES_LOW, NULL, NULL) != HF_SUCCESS) {
 		u_printf("timer thread create failed!\n");
 	}
-	
+	parse_crontab();
 	httpd_add_page("/timer", httpd_page_timer, NULL);
 	httpd_add_page("/ntp", httpd_page_ntp, NULL);
 }
